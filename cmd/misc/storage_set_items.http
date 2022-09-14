@@ -1,4 +1,4 @@
-POST https://cmd.shilov.org/api/storage.php
+POST https://shilov.org/cmd/api/storage.php
 Content-Type: application/json
 
 {

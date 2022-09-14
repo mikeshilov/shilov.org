@@ -171,7 +171,7 @@ class Storage {
         data.key = localStorage.getItem('_key') ?? '';
         return $.ajax({
             type: 'POST',
-            url: '/api/storage.php',
+            url: '/cmd/api/storage.php',
             data: JSON.stringify(data),
             contentType: "application/json",
             dataType: 'json'

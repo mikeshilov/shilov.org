@@ -39,7 +39,7 @@ export function markupToHtml (text) {
         .replace (/>/g, '&gt;')
         .replace (/\*\*([^*]+)\*\*/g, "<strong>$1</strong>") // **strong**
         .replace (/(\r\n|\r|\n)/g, '<br>') // \r \n
-        .replace (/\[(?<name>[^.]+)\.svg]\(#reply-(?<reply>[^)]+)\)/g, '<img data-reply="$<reply>" src="/img/$<name>.svg" class="reply-link" />') // [img.svg](#reply-text)
+        .replace (/\[(?<name>[^.]+)\.svg]\(#reply-(?<reply>[^)]+)\)/g, '<img data-reply="$<reply>" src="/cmd/img/$<name>.svg" class="reply-link" />') // [img.svg](#reply-text)
         .replace (/\[(?<title>[^\]]+)]\(#reply-(?<reply>[^)]+)\)/g, '<span data-reply="$<reply>" class="reply-link">$<title></span>') // [title](#reply-text)
         .replace (/\[\[hide:(?<text>[^\]]+)]]/g, '<span class="reply-secret">$<text></span>') //    [[hide:text]]
         .replace (/(?<url>https?:\/\/(www\.)?[-a-z\d@:%._+~#=]{1,256}\.[a-z\d()]{1,6}\b([-a-z\d()@:%_+.~#?&/=]*))/ig, '<a href="$<url>" target="_blank">$<url></a>') // https://...
