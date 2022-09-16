@@ -1,21 +1,6 @@
 // updating the sw: https://developers.google.com/web/fundamentals/primers/service-workers/lifecycle#updates
 
-const staticCacheName = 'cmd-v7';
-const assets = [
-    '/cmd/',
-    '/cmd/jquery.js',
-    '/cmd/spark-md5.min.js',
-    '/cmd/styles.css',
-    '/cmd/utils.js',
-    '/cmd/modules/main.js',
-    '/cmd/modules/storage.js',
-    '/cmd/modules/sync.js',
-    '/cmd/modules/ui.js',
-    '/cmd/modules/apps/misc.js',
-    '/cmd/modules/apps/notes.js',
-    '/cmd/img/pen.svg',
-    '/cmd/img/trash.svg'
-];
+const staticCacheName = 'cmd-v13';
 
 // install event
 self.addEventListener('install', evt => {
@@ -23,7 +8,31 @@ self.addEventListener('install', evt => {
     evt.waitUntil(
         caches.open(staticCacheName).then(cache => {
             console.log('cache opened');
-            return cache.addAll(assets);
+            return cache.addAll([
+                /(.+?\/)sw\.js/.exec(self.location)[1],
+                'jquery.js',
+                'spark-md5.min.js',
+                'styles.css',
+                'utils.js',
+                'manifest.json',
+                'modules/main.js',
+                'modules/storage.js',
+                'modules/sync.js',
+                'modules/ui.js',
+                'modules/apps/misc.js',
+                'modules/apps/notes.js',
+                'img/pen.svg',
+                'img/trash.svg',
+                'icons/favicon.ico',
+                'icons/android-chrome-192x192.png',
+                'fonts/fonts.css',
+                'fonts/source-code-pro-v22-latin_cyrillic-regular.woff2',
+                'fonts/source-code-pro-v22-latin_cyrillic-regular.woff',
+                'fonts/source-code-pro-v22-latin_cyrillic-regular.ttf',
+                'fonts/source-code-pro-v22-latin_cyrillic-600.woff2',
+                'fonts/source-code-pro-v22-latin_cyrillic-600.woff',
+                'fonts/source-code-pro-v22-latin_cyrillic-600.ttf'
+        ]);
         })
     );
 });
@@ -45,11 +54,10 @@ self.addEventListener('activate', async evt => {
 
 // fetch event
 self.addEventListener('fetch', evt => {
-    if (!/\.(gif|jpe?g|png|css|js|svg|ico|xml|json|php|bin|map|webmanifest)$/.test(evt.request.url)) {
-        evt.respondWith(caches.match('/cmd/'))
-        return
-    }
     evt.respondWith(
-        caches.match(evt.request).then(cacheRes => cacheRes || fetch(evt.request))
+        caches.match(evt.request).then(cacheRes => {
+            console.log (cacheRes ? 'YES' : 'NO', evt.request.url);
+            return cacheRes || fetch(evt.request)
+        })
     );
 });

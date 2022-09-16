@@ -46,7 +46,7 @@ function requestHandler (text) {
 }
 
 $(document).ready(function() {
-    ui.setVerInfo('1.4');
+    ui.setVerInfo('1.5');
     $("#sync-ind").click(()=>startSync());
     ui.init(processRequest);
     setInterval(()=>updateSyncIndicator(), 1000);

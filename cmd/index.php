@@ -2,28 +2,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMD</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="/cmd/styles.css">
-
-    <link rel="apple-touch-icon" sizes="180x180" href="/cmd/icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/cmd/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/cmd/icons/favicon-16x16.png">
-    <link rel="manifest" href="/cmd/site.webmanifest">
-    <link rel="mask-icon" href="/cmd/icons/safari-pinned-tab.svg" color="#5bbad5">
-    <link rel="shortcut icon" href="/cmd/icons/favicon.ico">
-
-    <meta name="msapplication-TileColor" content="#da532c">
-    <meta name="msapplication-config" content="/cmd/icons/browserconfig.xml">
     <meta name="theme-color" content="#ffffff">
 
-    <script src="/cmd/jquery.js"></script>
-    <script src="/cmd/utils.js"></script>
-    <script src="/cmd/spark-md5.min.js"></script>
-    <script src="/cmd/modules/main.js" type="module"></script>
+    <title>CMD</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="fonts/fonts.css">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="icons/favicon.ico">
+
+    <script src="jquery.js"></script>
+    <script src="utils.js"></script>
+    <script src="spark-md5.min.js"></script>
+    <script src="modules/main.js" type="module"></script>
 </head>
 <body>
     <div id="container">
@@ -72,7 +68,7 @@
     <script>
         $(function () {
             if('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/cmd/sw.js')
+                navigator.serviceWorker.register('sw.js')
                     .then(() => console.log('service worker registered'))
                     .catch(err => console.log('service worker not registered: ', err));
             }

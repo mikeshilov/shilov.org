@@ -1,18 +1,11 @@
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# redirect plan to ckld.ru
-RewriteCond %{HTTP_HOST} ^plan\.shilov\.org$ [NC]
-RewriteRule ^(.*)$ https://ckld.ru/plan/ [R=301,L]
+RewriteRule ^/?$ https://shilov.org/blog/ [L,R=301]
+RewriteRule ^(([a-z0-9]+-)+[a-z0-9]+)/?$ https://shilov.org/blog/$1 [L,R=301]
 
-# enforceing a no-trailing-slash policy
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)/$ /$1 [L,R=301]
-
-# blog
-RewriteCond %{HTTP_HOST} ^shilov\.org$ [NC]
-RewriteCond %{REQUEST_URI} !assets
-RewriteRule ^(([a-z0-9]+-)+[a-z0-9]+)$ index.php?slug=$1 [L,QSA]
+#RewriteCond %{REQUEST_URI} /blog$
+#RewriteRule ^(.*)/$ /$1 [L,R=301]
 
 #RewriteCond %{HTTP_HOST} ^(.+)\.shilov\.org$ [NC]
 #RewriteCond %{REQUEST_URI} !^/%1/ [NC]
