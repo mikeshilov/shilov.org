@@ -16,10 +16,10 @@
     <link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#5bbad5">
     <link rel="shortcut icon" href="icons/favicon.ico">
 
-    <script src="jquery.js"></script>
-    <script src="utils.js"></script>
-    <script src="spark-md5.min.js"></script>
-    <script src="modules/main.js" type="module"></script>
+    <script src="js/jquery.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/spark-md5.min.js"></script>
+    <script src="js/modules/main.js" type="module"></script>
 </head>
 <body>
     <div id="container">
