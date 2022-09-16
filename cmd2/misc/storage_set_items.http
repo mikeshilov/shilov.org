@@ -1,0 +1,15 @@
+POST https://shilov.org/cmd/api/storage.php
+Content-Type: application/json
+
+{
+  "key": "496c880caac1c145af6c335318725b4f",
+  "itemsToSet": [
+    {
+      "id": "test:1",
+      "value": "{}",
+      "modified": 123
+    }
+  ]
+}
+
+###
