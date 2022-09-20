@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="shilov.org" confirmBeforeDeletion="false">
+  <component name="PublishConfigData" serverName="shilov.org" confirmBeforeDeletion="false">
     <option name="confirmBeforeDeletion" value="false" />
     <serverData>
       <paths name="bible.recoveryversion.ru">
@@ -20,11 +20,10 @@
       <paths name="shilov.org">
         <serverdata>
           <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/" local="$PROJECT_DIR$/public_html" web="/" />
           </mappings>
         </serverdata>
       </paths>
     </serverData>
-    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>

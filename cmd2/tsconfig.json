@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./js",
+    "sourceMap": true,
     "allowJs": true,
     "target": "es6",
     "lib": [
@@ -16,7 +17,9 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true
   },
   "include": ["./src/**/*"]
 }
