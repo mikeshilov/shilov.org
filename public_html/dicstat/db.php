@@ -48,8 +48,10 @@ SELECT
     MIN(e_when) as min, 
     MAX(e_when) as max,
     (SELECT e_params FROM events WHERE e_what='app.preset.load' and e_who='$id' LIMIT 1) as preset_load,
-    (SELECT COUNT(DISTINCT e_params) FROM events WHERE e_what='analytics.visualizer.change' and e_who='$id') as vis_changes,
-    (SELECT COUNT(DISTINCT e_params) FROM events WHERE e_what='table.column.select' and e_who='$id') as col_selects
+    (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.change' and e_who='$id') as vis_changes,
+    (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.setting' and e_who='$id') as vis_settings,
+    (SELECT COUNT(1) FROM events WHERE e_what='table.column.select' and e_who='$id') as col_selects,
+    (SELECT COUNT(1) FROM events WHERE e_what LIKE 'menu.sidebar.%' and e_who='$id') as sidebar_menu
 FROM events 
 WHERE e_who='$id'
 ");
@@ -59,6 +61,22 @@ WHERE e_who='$id'
         'ended' => strtotime($row[0]['max']),
         'preset' => json_decode($row[0]['preset_load'])->name,
         'vis_changes' => $row[0]['vis_changes'],
-        'col_selects' => $row[0]['col_selects']
+        'vis_settings' => $row[0]['vis_settings'],
+        'col_selects' => $row[0]['col_selects'],
+        'sidebar_menu' => $row[0]['sidebar_menu']
     ]  : NULL;
+}
+
+function get_events ($id) {
+    $res = db_query("SELECT e_when, e_what, e_params FROM events WHERE e_who='$id' ORDER BY e_when");
+    return $res->fetch_all(MYSQLI_ASSOC);
+}
+
+function get_menus ($id) {
+    $res = db_query("SELECT e_what FROM events WHERE e_what LIKE 'menu.sidebar.%' and e_who='$id'");
+    $menus = [];
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $row) {
+        $menus[]=str_replace ('menu.sidebar.', '', $row['e_what']);
+    }
+    return $menus;
 }
