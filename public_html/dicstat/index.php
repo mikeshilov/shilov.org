@@ -111,6 +111,7 @@ function hideZero($val)
             <th scope="col">Vis Settings</th>
             <th scope="col">Col Selects</th>
             <th scope="col">Menu</th>
+            <th scope="col">Errors</th>
         </tr>
         </thead>
         <tbody>
@@ -133,6 +134,7 @@ function hideZero($val)
                 <td><?= hideZero($info['vis_settings']) ?></td>
                 <td><?= hideZero($info['col_selects']) ?></td>
                 <td><?php foreach ($menus as $menu) print('<i class="bi '.$menu2icon[$menu].'"></i>') ?></td>
+                <td><?= hideZero($info['app_errors']) ?></td>
             </tr>
             <?php
         }

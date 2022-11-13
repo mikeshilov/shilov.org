@@ -51,7 +51,8 @@ SELECT
     (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.change' and e_who='$id') as vis_changes,
     (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.setting' and e_who='$id') as vis_settings,
     (SELECT COUNT(1) FROM events WHERE e_what='table.column.select' and e_who='$id') as col_selects,
-    (SELECT COUNT(1) FROM events WHERE e_what LIKE 'menu.sidebar.%' and e_who='$id') as sidebar_menu
+    (SELECT COUNT(1) FROM events WHERE e_what LIKE 'menu.sidebar.%' and e_who='$id') as sidebar_menu,
+    (SELECT COUNT(1) FROM events WHERE e_what LIKE 'app.error.%' and e_who='$id') as app_errors
 FROM events 
 WHERE e_who='$id'
 ");
@@ -63,7 +64,8 @@ WHERE e_who='$id'
         'vis_changes' => $row[0]['vis_changes'],
         'vis_settings' => $row[0]['vis_settings'],
         'col_selects' => $row[0]['col_selects'],
-        'sidebar_menu' => $row[0]['sidebar_menu']
+        'sidebar_menu' => $row[0]['sidebar_menu'],
+        'app_errors' => $row[0]['app_errors']
     ]  : NULL;
 }
 
