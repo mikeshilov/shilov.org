@@ -2,11 +2,26 @@
 require("db.php");
 $who_id = $_GET['who_id'] ?? NULL;
 
-function hideZero($val)
+function zero2nbsp($val): string
 {
     return $val == 0 ? '&nbsp;' : $val;
 }
 
+function zero2empty($val): string
+{
+    return $val == 0 ? '' : $val;
+}
+
+function array2html ($arr): string
+{
+    $lines =[];
+    foreach ($arr as $name => $value) {
+        if (!is_string($value) && !is_numeric($value))
+            $value = print_r ($value, true);
+        $lines[] = "<div><pre><strong>$name&nbsp;=&nbsp;</strong>$value</pre></div>";
+    }
+    return join( '', $lines);
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -18,12 +33,20 @@ function hideZero($val)
           integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <style>
+        .container {
+            margin-top: 10px;
+        }
+
         .click-cursor {
             cursor: pointer;
         }
 
         tr.highlight-on-hover:hover {
             background-color: #f0f0f0;
+        }
+
+        .done-text:after {
+            content: " Done!";
         }
     </style>
 </head>
@@ -77,7 +100,7 @@ function hideZero($val)
                     <tr class="highlight-on-hover">
                         <td><?= $event['e_when'] ?></td>
                         <td><?= $what ?></td>
-                        <td><?= $event['e_params'] ?? '' ?></td>
+                        <td><?= $event['e_params'] ? array2html(json_decode($event['e_params'], true)) : '&nbsp;' ?></td>
                     </tr>
                     <?php
                 }
@@ -91,15 +114,14 @@ function hideZero($val)
     $id = $name2ids[array_key_first($name2ids)];
     $info = get_info($id);
     $menu2icon = ['open' => 'bi-folder2-open', 'save.open' => 'bi-save', 'save.done' => 'bi-save-fill', 'paste' => 'bi-clipboard', 'presets' => 'bi-bookmarks'];
+    $csvLines = ['Name,Date,Duration,Preset,Vis Changes,Vis Settings,Col Selects,Menu,Errors'];
     //print "<code><pre>";
     //print_r ($info);
     //print "</pre></code>";
     ?>
-    <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '>';">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item active" aria-current="page">Objects</li>
-        </ol>
-    </nav>
+    <button id="copy-clipboard-btn" type="button" class="btn btn-primary btn-sm" onclick="copyToClipboard();">Copy to
+        clipboard
+    </button>
     <table class="table">
         <thead>
         <tr>
@@ -118,26 +140,47 @@ function hideZero($val)
         <?php
         foreach ($name2ids as $name => $id) {
             $info = get_info($id);
-            $o_date = date('M-d', $info['started']);
-            $minutes = floor(($info['ended'] - $info['started']) / 60);
-            $seconds = ($info['ended'] - $info['started']) % 60;
-            $o_duration = ($minutes < 10 ? "0" : "") . $minutes . ":" . ($seconds < 10 ? "0" : "") . $seconds;
+            $start_info = $info['app_start'];
+
+            if (strpos($start_info['userAgent'], 'YandexBot') !== false
+                || strpos($start_info['userAgent'], 'YaDirectFetcher') !== false)
+                continue;
+
+            $date = $info['started'];
+            $long_date = date('Y-m-d', $date);
+            $short_date = date('M-d', $date);
+            $duration = gmdate("H:i:s", $info['ended'] - $info['started']);
             $menus = $info['sidebar_menu'] ? get_menus($id) : [];
+            $csvLines []= "$name,$long_date,$duration,{$info['preset']},"
+                .zero2empty($info['vis_changes']).","
+                .zero2empty($info['vis_settings']).","
+                .zero2empty($info['col_selects']).","
+                .zero2empty(count($menus)).","
+                .zero2empty($info['app_errors']).",";
+
+            if ($info['vis_changes'] == 0 &&
+                $info['vis_settings'] == 0 &&
+                $info['col_selects'] == 0 &&
+                count($menus) == 0)
+                continue;
+
             ?>
             <tr class="highlight-on-hover click-cursor"
                 onclick="window.location='https://shilov.org/dicstat/?who_id=<?= $id ?>'">
                 <th scope="row"><?= $name ?></th>
-                <td><?= $o_date ?></td>
-                <td><?= $o_duration ?></td>
+                <td><?= $short_date ?></td>
+                <td><?= $duration ?></td>
                 <td><?= $info['preset'] ?></td>
-                <td><?= hideZero($info['vis_changes']) ?></td>
-                <td><?= hideZero($info['vis_settings']) ?></td>
-                <td><?= hideZero($info['col_selects']) ?></td>
-                <td><?php foreach ($menus as $menu) print('<i class="bi '.$menu2icon[$menu].'"></i>') ?></td>
-                <td><?= hideZero($info['app_errors']) ?></td>
+                <td><?= zero2nbsp($info['vis_changes']) ?></td>
+                <td><?= zero2nbsp($info['vis_settings']) ?></td>
+                <td><?= zero2nbsp($info['col_selects']) ?></td>
+                <td><?php foreach ($menus as $menu) print('<i class="bi ' . $menu2icon[$menu] . '"></i>') ?></td>
+                <td><?= zero2nbsp($info['app_errors']) ?></td>
             </tr>
             <?php
         }
+        ?>
+        <pre id="csv-text" style="display: none"><?= join("\n", $csvLines) ?></pre> <?php
         }
         ?>
         </tbody>
@@ -146,5 +189,18 @@ function hideZero($val)
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
         crossorigin="anonymous"></script>
+<script>
+    function copyToClipboard() {
+        const text = document.getElementById("csv-text").innerText;
+        const copyBtn = document.getElementById('copy-clipboard-btn');
+
+        navigator.clipboard.writeText(text).then(function () {
+            copyBtn.classList.add("done-text");
+            setTimeout(() => copyBtn.classList.remove("done-text"), 1000);
+        }, function (err) {
+            alert('Could not copy: ' + err);
+        });
+    }
+</script>
 </body>
 </html>
