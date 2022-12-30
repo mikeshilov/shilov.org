@@ -18,7 +18,7 @@ function db_query ($query)
     return $res;
 }
 
-function get_name2ids () {
+function get_name2ids ($from, $to) {
     $res = db_query("
 SELECT DISTINCT e_who 
 FROM events 
@@ -28,7 +28,7 @@ WHERE e_who NOT IN (
                     '6d4dfde8-2df6-43e7-a4ea-1be0995d2912',
                     'f8d72c80-9e58-4b87-aee4-9b7c702a78f3'
                    )
-AND e_when > '2022-10-31' AND e_when < '2022-11-15'
+AND e_when > '$from' AND e_when < '$to'
 ORDER BY e_when DESC");
     $items = $res->fetch_all(MYSQLI_ASSOC);
     $name2id = [];
@@ -52,6 +52,7 @@ SELECT
     (SELECT e_params FROM events WHERE e_what='app.start' and e_who='$id' LIMIT 1) as app_start,
     (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.change' and e_who='$id') as vis_changes,
     (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.setting' and e_who='$id') as vis_settings,
+    (SELECT COUNT(1) FROM events WHERE e_what='analytics.visualizer.chart.zoom' and e_who='$id') as chart_zoom,
     (SELECT COUNT(1) FROM events WHERE e_what='table.column.select' and e_who='$id') as col_selects,
     (SELECT COUNT(1) FROM events WHERE e_what LIKE 'menu.sidebar.%' and e_who='$id') as sidebar_menu,
     (SELECT COUNT(1) FROM events WHERE e_what LIKE 'app.error.%' and e_who='$id') as app_errors
@@ -65,6 +66,7 @@ WHERE e_who='$id'
         'preset' => json_decode($row[0]['preset_load'])->name,
         'vis_changes' => $row[0]['vis_changes'],
         'vis_settings' => $row[0]['vis_settings'],
+        'chart_zoom' => $row[0]['chart_zoom'],
         'col_selects' => $row[0]['col_selects'],
         'sidebar_menu' => $row[0]['sidebar_menu'],
         'app_errors' => $row[0]['app_errors'],
