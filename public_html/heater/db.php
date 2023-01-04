@@ -19,5 +19,6 @@ function db_query ($query)
 }
 
 function insert_record ($val) {
-    db_query("INSERT INTO records (moment, value) VALUES (NOW(), $val");
+    $v = is_numeric($val) ? $val : 'NULL';
+    db_query("INSERT INTO records (moment, value) VALUES (NOW(), $v)");
 }
