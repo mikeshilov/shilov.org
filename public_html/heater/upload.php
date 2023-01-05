@@ -22,25 +22,33 @@ function send2telegram ($text, $chat_id) {
 
 
 move_uploaded_file($_FILES["pic"]["tmp_name"], "pic.png");
-$fp = fopen('data.json', 'w');
+
 $temp = $_POST['temp'];
 $msg = $_POST['msg'];
-preg_match("/(?'moment'[^\[]+)\[(?'err'[^\]]*)\]\s+\{(?'temp'\S+)\s+\((?'contr'[^\)]+)\)\}/", $msg, $matches);
+
+// save data for the webpage
+$fp = fopen('data.json', 'w');
 fwrite($fp, json_encode(['temp' => $temp, 'msg' => $msg]));
 fclose($fp);
 
-$emulate6A = FALSE;
+//preg_match("/(?'moment'[^\[]+)\[(?'err'[^\]]*)\]\s+\{(?'temp'\S+)\s+\((?'contr'[^\)]+)\)\}/", $msg, $matches);
 
-if ($emulate6A || (isset($matches['err']) && $matches['err']==='6A')) {
+// save matches to file
+//$fp = fopen('matches.txt', 'w');
+//fwrite($fp, print_r($matches, true));
+//fclose($fp);
+
+if (strpos ($msg, '[6A]') !== false) {
     $temp = 127;
     $last_temp = get_last_temp();
     if ($last_temp !== $temp) {
         insert_record($temp);
         foreach (get_subscribed_chat_ids() as $chat) {
             send2telegram ("Там кажется 6A, см. https://shilov.org/heater", $chat);
+            sleep(0.5);
         }
     }
 }
-else if ($temp > 0) {
+else if ($temp > 0 && $temp != 6) {
     insert_record($temp);
 }
