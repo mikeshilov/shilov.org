@@ -13,6 +13,12 @@
     <img id="pic" src="" alt='pic'/>
     <h1 id="temp"></h1>
     <h3 id="msg"></h3>
+    <pre>
+        <?php
+        //require ('db.php');
+        //print_r (get_last_temp());
+        ?>
+    </pre>
 </div>
 <script>
     let interval_id, requesting=false, xmlHttp;
