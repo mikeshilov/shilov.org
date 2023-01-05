@@ -28,6 +28,14 @@ function get_last_temp () {
     return $res->fetch_assoc()['value']/2;
 }
 
+function get_last_day_values () {
+    $res = db_query("SELECT moment, value FROM records WHERE value IS NOT NULL AND moment>(NOW() - INTERVAL 6 HOUR) ORDER BY moment");
+    $list = [];
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $row)
+        $list[]=[$row['moment'], $row['value']/2];
+    return $list;
+}
+
 function get_subscribed_chat_ids () {
     $res = db_query("SELECT chat FROM users WHERE subscribed=1");
     $list = [];

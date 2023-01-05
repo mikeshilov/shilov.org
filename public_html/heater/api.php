@@ -1,4 +1,6 @@
 <?php
+require "db.php";
+
 header("Content-Type: application/json; charset=utf-8");
 
 function exception_handler($exception) {
@@ -23,6 +25,7 @@ if (isset($_GET['action'])) {
         case 'get':
             $data = json_decode(file_get_contents('data.json'), true);
             $pic = file_get_contents('pic.png');
+            //$rows = get_last_day_values();
             echo json_encode(['temp'=>$data['temp'], 'msg'=>$data['msg'], 'pic'=>base64_encode($pic)]);
             break;
         default:

@@ -49,6 +49,6 @@ if (strpos ($msg, '[6A]') !== false) {
         }
     }
 }
-else if ($temp > 0 && $temp != 6) {
+else if ($temp > 0) {
     insert_record($temp);
 }
