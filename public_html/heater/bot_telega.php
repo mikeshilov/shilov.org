@@ -53,6 +53,9 @@ if (!$message_id || !$chat_id || !$text) die();
 // process the request
 $answer='';
 switch ($text) {
+    case '/start':
+        send2telegram('Привет, чего желаете?');
+        break;
     case '/1':
         subscribe_user($user_id, $user_name, $chat_id);
         send2telegram('Теперь вы подписаны на сообщения от котла. Текущую температуру можно смотреть на https://shilov.org/heater');
