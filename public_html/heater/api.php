@@ -25,8 +25,14 @@ if (isset($_GET['action'])) {
         case 'get':
             $data = json_decode(file_get_contents('data.json'), true);
             $pic = file_get_contents('pic.png');
-            //$rows = get_last_day_values();
             echo json_encode(['temp'=>$data['temp'], 'msg'=>$data['msg'], 'pic'=>base64_encode($pic)]);
+            break;
+        case 'last':
+            if (isset($_GET['hours']) && is_numeric($_GET['hours'])) {
+                echo json_encode(['rows'=>get_last_values($_GET['hours'])]);
+            }
+            else
+                echo json_encode(['error'=>'hours parameter is missing']);
             break;
         default:
             echo "action is not supported";

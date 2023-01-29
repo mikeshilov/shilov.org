@@ -28,11 +28,22 @@ function get_last_temp () {
     return $res->fetch_assoc()['value']/2;
 }
 
-function get_last_day_values () {
-    $res = db_query("SELECT moment, value FROM records WHERE value IS NOT NULL AND moment>(NOW() - INTERVAL 6 HOUR) ORDER BY moment");
+function get_last_values ($hours) {
+    $res = db_query("SELECT moment, value FROM records WHERE value IS NOT NULL AND moment>(NOW() - INTERVAL ${hours} HOUR) ORDER BY moment");
     $list = [];
-    foreach ($res->fetch_all(MYSQLI_ASSOC) as $row)
-        $list[]=[$row['moment'], $row['value']/2];
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $coeff = 3;
+    for ($i=0;$i<count($rows);$i+=$coeff) {
+        $row = $rows[$i];
+        $max = $row['value'];
+        for ($j=1;$j<$coeff;$j++) {
+            if ($i+$j<count($rows) && $rows[$i+$j]['value']>$max) {
+                $row = $rows[$i+$j];
+                $max = $row['value'];
+            }
+        }
+        $list[] = [$row['moment'], $row['value'] / 2];
+    }
     return $list;
 }
 

@@ -4,59 +4,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!--<meta http-equiv="refresh" content="1" >-->
     <title>HEATER</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
-
-        /*
-        function drawChart(rows) {
-            const raw = [['Время', 'Температура']].concat(rows);
-            //console.log (raw.slice(0,10));
-            const data = google.visualization.arrayToDataTable([raw]);
-
-            const options = {
-                title: 'Котёл',
-                legend: { position: 'bottom' }
-            };
-
-            const chart = new google.visualization.LineChart(document.getElementById('temp_chart'));
-
-            chart.draw(data, options);
-        }
-        */
-
         google.charts.load('current', {'packages': ['line', 'corechart']});
-
-        function drawChart(values) {
-            const chartDiv = document.getElementById('chart_div');
-            const data = new google.visualization.DataTable();
-            data.addColumn('datetime', 'Время');
-            data.addColumn('number', "Температура");
-
-            const rows = [];
-            //[[new Date(2014, 0), -.5], [new Date(2014, 1), .4], [new Date(2014, 2), .5]];
-            values.forEach((row) => rows.push([new Date(Date.parse(row[0])), row[1]]));
-
-            console.log (rows.slice(0,10));
-            data.addRows(rows);
-
-            const materialOptions = {
-                chart: {title: 'Температура воды в системе'},
-                width: 900,
-                height: 500,
-                series: { // Gives each series an axis name that matches the Y-axis below.
-                    0: {axis: 'Температура'}
-                },
-                axes: { // Adds labels to each axis; they don't have to match the axis names.
-                    y: { Temps: {label: 'Температура'} }
-                }
-            };
-
-            const materialChart = new google.charts.Line(chartDiv);
-            materialChart.draw(data, materialOptions);
-        }
     </script>
 </head>
 
@@ -71,47 +22,107 @@
         //print_r (get_last_temp());
         ?>
     </pre>
-    <div id="chart_div" style="width: 900px; height: 500px"></div>
+    <div id="chart_div" style="width: 100%; height: 500px; padding: 10px; background-color: white; border-radius: 10px;"></div>
 </div>
 <script>
-    let interval_id, requesting=false, xmlHttp;
+    let intCur, intChart, requestingCurrentData=false, requestingChartData=false;
 
-    function request()
+    function drawChart(data) {
+        const chartDiv = document.getElementById('chart_div');
+        const dataTable = new google.visualization.DataTable();
+        dataTable.addColumn('datetime', 'Время');
+        dataTable.addColumn('number', "");
+
+        const rows = [];
+        data.forEach(row => rows.push([new Date(Date.parse(row[0])), row[1]]));
+        dataTable.addRows(rows);
+
+        new google.charts.Line(chartDiv).draw(dataTable, {
+            chart: {title: 'Температура воды в системе'},
+            width: chartDiv.offsetWidth - 20,
+            height: 500,
+            series: { // Gives each series an axis name that matches the Y-axis below.
+                0: {axis: ''}
+            },
+            axes: { // Adds labels to each axis; they don't have to match the axis names.
+                y: { Temps: {label: ''} }
+            }
+        });
+    }
+
+    function requestCurrentData()
     {
-        if (!requesting && !document.hidden) {
-            requesting = true;
-            xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
-                if (xmlHttp.readyState === 4 && xmlHttp.status === 200) {
+        if (!requestingCurrentData && !document.hidden) {
+            requestingCurrentData = true;
+            const reqCur = new XMLHttpRequest();
+            reqCur.onreadystatechange = function () {
+                if (reqCur.readyState === 4 && reqCur.status === 200) {
                     try {
-                        const resp = JSON.parse(xmlHttp.responseText);
+                        const resp = JSON.parse(reqCur.responseText);
                         document.getElementById("msg").innerText = resp['msg'];
                         document.getElementById("temp").innerText = resp['temp'];
                         document.getElementById("pic").src = 'data:image/png;base64,' + resp['pic'];
-                        //drawChart(resp['rows']);
-                        requesting = false;
                     } catch {
-                        console.log("API response error: " + xmlHttp.responseText)
+                        console.log("API response error: " + reqCur.responseText)
                     }
-
+                    requestingCurrentData = false;
                 }
             }
-            xmlHttp.open("GET", 'api.php?action=get', true);
-            xmlHttp.send(null);
+            reqCur.open("GET", 'api.php?action=get', true);
+            reqCur.send();
         }
+    }
+
+    function requestChartData(hours)
+    {
+        if (!requestingChartData && !document.hidden) {
+            requestingChartData = true;
+            const reqChart = new XMLHttpRequest();
+            reqChart.onreadystatechange = function () {
+                if (reqChart.readyState === 4 && reqChart.status === 200) {
+                    try {
+                        const resp = JSON.parse(reqChart.responseText);
+                        if (!resp['error']) {
+                            drawChart(resp['rows']);
+                        }
+                        else {
+                            alert (resp['error']);
+                        }
+                    } catch {
+                        console.log("API response error: " + reqChart.responseText)
+                    }
+                    requestingChartData = false;
+                }
+            }
+            reqChart.open("GET", 'api.php?action=last&hours='+hours, true);
+            reqChart.send();
+        }
+    }
+
+    function refreshChart () {
+        requestChartData(1);
     }
 
     window.onload = function() {
-        request();
-        interval_id = setInterval(request, 500);
+        requestCurrentData();
+        refreshChart();
+        intCur = setInterval(requestCurrentData, 500);
+        intChart = setInterval(refreshChart, 10000);
     }
 
     window.onbeforeunload = function (){
-        clearInterval(interval_id);
-        if (xmlHttp) {
-            xmlHttp.abort();
-        }
+        clearInterval(intCur);
+        clearInterval(intChart);
     };
+
+    window.onresize = function (){
+        refreshChart();
+    };
+
+    //window.onkeydown = function (event) {
+    //    console.log (event.keyCode.toString(16));
+    //};
+
 </script>
 </body>
 </html>

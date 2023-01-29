@@ -157,7 +157,7 @@ function array2html ($arr): string
             $info = get_info($id);
 
             // only those who zoomed
-            if ($info['col_selects'] == 0) continue;
+            //if ($info['col_selects'] == 0) continue;
 
             $start_info = $info['app_start'];
 
