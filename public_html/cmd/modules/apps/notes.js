@@ -80,7 +80,7 @@ export default class NotesApp {
             }
         }
 
-        return this.updateNote (req) ?? this.searchNotes(req);
+        return this.exportNotes (req) ?? (this.updateNote (req) ?? this.searchNotes(req));
     }
 
     updateNote (req, noteId) {
@@ -122,6 +122,46 @@ export default class NotesApp {
             'request': e ? '***' : req,
             'response': noteItem.obj.o + (e ? `[[hide:${e}]]` : '')
         });
+    }
+
+    exportNotes (req, noteId) {
+        const rx = /^(?<cmd>(export|expsec))(\.\.(?<k>.+))?$/is;
+        const match = rx.exec(req);
+        if (match !== null) {
+            const secret_only = match.groups.cmd === 'expsec';
+            const k = match.groups.k ? match.groups.k.trim() : undefined;
+            const notes = {};
+            for (const item of storage.items(['note'])) {
+                let note = item.obj.o;
+
+                if (secret_only && !item.obj.e) {
+                    continue;
+                }
+
+                if (item.obj.e && k) {
+                    const text = storage.decText(item.obj.e, k, item.obj.h);
+                    console.assert (text !== undefined);
+                    note += text
+                }
+
+                if (!item.obj.e || k) {
+                    notes[item.id] = note;
+                }
+            }
+
+            if (Object.keys(notes).length) {
+                let blob = new Blob([JSON.stringify(notes)], {type: "text/javascript"});
+                let link = document.createElement("a");
+                link.setAttribute("href", URL.createObjectURL(blob));
+                link.setAttribute("download", "notes.json");
+                link.click();
+            }
+
+            return Promise.resolve ({
+                'request': req.replace(rx, '$<cmd>' + (k ? '..***' : '')),
+                'response': 'экспортировал ' + Object.keys(notes).length + (secret_only ? ' секретных ' : ' ') + 'заметок'
+            });
+        }
     }
 
     searchNotes (text) {
