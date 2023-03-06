@@ -1,6 +1,6 @@
 // updating the sw: https://developers.google.com/web/fundamentals/primers/service-workers/lifecycle#updates
 
-const staticCacheName = 'cmd-v13';
+const staticCacheName = 'cmd-v14';
 
 // install event
 self.addEventListener('install', evt => {

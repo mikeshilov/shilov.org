@@ -132,20 +132,19 @@ export default class NotesApp {
             const k = match.groups.k ? match.groups.k.trim() : undefined;
             const notes = {};
             for (const item of storage.items(['note'])) {
-                let note = item.obj.o;
 
                 if (secret_only && !item.obj.e) {
                     continue;
                 }
 
+                let e = "";
                 if (item.obj.e && k) {
-                    const text = storage.decText(item.obj.e, k, item.obj.h);
-                    console.assert (text !== undefined);
-                    note += text
+                    e = storage.decText(item.obj.e, k, item.obj.h);
+                    console.assert (e !== undefined);
                 }
 
                 if (!item.obj.e || k) {
-                    notes[item.id] = note;
+                    notes[item.id] = {o: item.obj.o, e};
                 }
             }
 
