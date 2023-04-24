@@ -19,46 +19,6 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
 <script>
-    const elNumber = document.getElementById("number"),
-        elAnswer = document.getElementById("answer"),
-        elProgress = document.getElementById("progress"),
-        elContainer = document.getElementById("container"),
-        elFeedback = document.getElementById("feedback");
-
-    const numbers = shuffle ([...Array(21).keys(), 30, 40, 50, 60, 70, 80, 90, 100, 1000]);
-    const trans = {
-        0: "զրո",
-        1: "մեկ",
-        2: "երկու",
-        3: "երեք",
-        4: "չորս",
-        5: "հինգ",
-        6: "վեց",
-        7: "յոթ",
-        8: "ութ",
-        9: "ինը",
-        10: "տասը",
-        11: "տասնմեկ",
-        12: "տասներկու",
-        13: "տասներեք",
-        14: "տասնչորս",
-        15: "տասնհինգ",
-        16: "տասնվեց",
-        17: "տասնյոթ",
-        18: "տասնութ",
-        19: "տասնինը",
-        20: "քսան",
-        30: "երեսուն",
-        40: "քառասուն",
-        50: "հիսուն",
-        60: "վաթսուն",
-        70: "յոթանասուն",
-        80: "ութսուն",
-        90: "իննսուն",
-        100: "հարյուր",
-        1000: "հազար"
-    }
-
     function shuffle(array) {
         let currentIndex = array.length,  randomIndex;
 
@@ -77,37 +37,193 @@
         return array;
     }
 
-    function newNumber () {
-        elNumber.innerText = numbers[curItem];
-        elAnswer.value = "";
-        elAnswer.classList.remove("is-invalid");
-        const progress = Math.round(curItem * 100 / testItems);
-        elProgress.setAttribute('aria-valuenow', String(progress));
-        elProgress.setAttribute('style','width:' + progress + '%');
-        elFeedback.setAttribute('style','display: none');
+    const BasicNumTester= {
+        numbers: shuffle ([...Array(21).keys(), 30, 40, 50, 60, 70, 80, 90, 100, 1000]),
+        trans: {
+            0: "զրո",
+            1: "մեկ",
+            2: "երկու",
+            3: "երեք",
+            4: "չորս",
+            5: "հինգ",
+            6: "վեց",
+            7: "յոթ",
+            8: "ութ",
+            9: "ինը",
+            10: "տասը",
+            11: "տասնմեկ",
+            12: "տասներկու",
+            13: "տասներեք",
+            14: "տասնչորս",
+            15: "տասնհինգ",
+            16: "տասնվեց",
+            17: "տասնյոթ",
+            18: "տասնութ",
+            19: "տասնինը",
+            20: "քսան",
+            30: "երեսուն",
+            40: "քառասուն",
+            50: "հիսուն",
+            60: "վաթսուն",
+            70: "յոթանասուն",
+            80: "ութսուն",
+            90: "իննսուն",
+            100: "հարյուր",
+            1000: "հազար"
+        },
+        curTest: 0,
+        curAnswer: null,
+        maxTests: 2,
+
+        next () {
+            if (this.curAnswer && this.curTest < this.maxTests) {
+                this.curTest += 1;
+            }
+            if (this.curTest < this.maxTests) {
+                const quest = this.numbers[this.curTest];
+                this.curAnswer = this.trans[quest];
+                return this.numbers[this.curTest];
+            }
+            return null;
+        },
+
+        answer () {
+            return this.curAnswer;
+        },
+
+        progress () {
+            return Math.round(this.curTest * 100 / this.maxTests);
+        }
     }
 
-    elAnswer.addEventListener("keyup", function(event) {
-        if (event.key === "Enter") {
-            if (trans[numbers[curItem]].toLowerCase() === elAnswer.value.trim().toLowerCase()) {
-                curItem += 1;
-                if (curItem >= testItems) {
-                    elContainer.innerHTML = "<h1>Well done!</h1>";
-                } else {
-                    newNumber();
+    const BigNumTester = {
+        trans: {
+            0: "զրո",
+            1: "մեկ",
+            2: "երկու",
+            3: "երեք",
+            4: "չորս",
+            5: "հինգ",
+            6: "վեց",
+            7: "յոթ",
+            8: "ութ",
+            9: "ինը",
+            10: "տասը",
+            11: "տասնմեկ",
+            12: "տասներկու",
+            13: "տասներեք",
+            14: "տասնչորս",
+            15: "տասնհինգ",
+            16: "տասնվեց",
+            17: "տասնյոթ",
+            18: "տասնութ",
+            19: "տասնինը",
+            20: "քսան",
+            30: "երեսուն",
+            40: "քառասուն",
+            50: "հիսուն",
+            60: "վաթսուն",
+            70: "յոթանասուն",
+            80: "ութսուն",
+            90: "իննսուն",
+            100: "հարյուր",
+            1000: "հազար"
+        },
+        questNumber: 0,
+        curQuestion: null,
+        maxQuestions: 5,
+
+        _before1000 (num) {
+            const units = num % 10;
+            const tens = Math.floor(num / 10) % 10;
+            const hundreds = Math.floor(num / 100) % 10;
+            let output = hundreds > 0 ? this.trans[hundreds.toString()] + ' հարյուր ' : '';
+            if (tens < 1) {
+                if (units > 0) {
+                    output += this.trans[units.toString()];
                 }
+            } else if (tens < 2) {
+                output += this.trans['1' + units.toString()];
             } else {
-                elAnswer.classList.add("is-invalid");
-                elFeedback.innerText = trans[numbers[curItem]].toLowerCase() + " !== " + elAnswer.value.trim().toLowerCase();
-                elFeedback.setAttribute('style','display: block');
+                output += this.trans[tens.toString()+'0'] + this.trans[units.toString()];
+            }
+            return output.trimEnd();
+        },
+
+        next () {
+            if (this.questNumber < this.maxQuestions) {
+                const from = 999, upto = 99999;
+                this.questNumber += 1;
+                this.curQuestion = Math.round(Math.random() * (upto - from)) + from;
+            }
+            else {
+                this.curQuestion = null;
+            }
+            return this.curQuestion !== null ? this.curQuestion.toString(): null;
+        },
+
+        answer () {
+            if (this.curQuestion !== null){
+                const units = this.curQuestion % 1000;
+                const thousands = Math.floor(this.curQuestion / 1000) % 1000;
+                let answer = thousands > 0 ? this._before1000(thousands) + ' հազար ' : '';
+                if (units > 0) {
+                    answer += this._before1000(units)
+                }
+                return answer.trimEnd()
+            } else {
+                return null;
+            }
+        },
+
+        progress () {
+            return Math.round(this.curTest * 100 / this.maxQuestions);
+        }
+    }
+
+
+    const elNumber = document.getElementById("number"),
+        elAnswer = document.getElementById("answer"),
+        elProgress = document.getElementById("progress"),
+        elContainer = document.getElementById("container"),
+        elFeedback = document.getElementById("feedback");
+
+    function start (tester) {
+        function nextQuestion() {
+            const question = tester.next();
+            if (question) {
+                elNumber.innerText = question;
+                elAnswer.value = "";
+                elAnswer.classList.remove("is-invalid");
+                const progress = tester.progress();
+                elProgress.setAttribute('aria-valuenow', String(progress));
+                elProgress.setAttribute('style', 'width:' + progress + '%');
+                elFeedback.setAttribute('style', 'display: none');
+            } else {
+                elContainer.innerHTML = "<h1>Well done!</h1>";
+                elAnswer.removeEventListener("keyup", keyUpEventListener);
             }
         }
-    });
 
-    const testItems = 10;
-    let curItem = 0;
-    newNumber();
-    elAnswer.focus();
+        const keyUpEventListener = function (event) {
+            if (event.key === "Enter") {
+                const reply = elAnswer.value.trim().toLowerCase();
+                if (tester.answer().toLowerCase() === reply) {
+                    nextQuestion();
+                } else {
+                    elAnswer.classList.add("is-invalid");
+                    elFeedback.innerText = tester.answer().toLowerCase() + " !== " + reply;
+                    elFeedback.setAttribute('style', 'display: block');
+                }
+            }
+        }
+
+        elAnswer.addEventListener("keyup", keyUpEventListener);
+        nextQuestion();
+        elAnswer.focus();
+    }
+
+    start (Object.create(BigNumTester));
 
 </script>
 </body>
