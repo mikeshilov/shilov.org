@@ -144,8 +144,10 @@
                 }
             } else if (tens < 2) {
                 output += this.trans['1' + units.toString()];
+            } else if (tens === 2 && units === 0) {
+                output += this.trans['20'];
             } else {
-                output += this.trans[tens.toString()+'0'] + this.trans[units.toString()];
+                output += this.trans[tens.toString()+'0'] + units > 0 ? this.trans[units.toString()] : '';
             }
             return output.trimEnd();
         },
@@ -177,7 +179,7 @@
         },
 
         progress () {
-            return Math.round(this.curTest * 100 / this.maxQuestions);
+            return Math.round((this.questNumber - 1) * 100 / this.maxQuestions);
         }
     }
 
@@ -212,7 +214,7 @@
                     nextQuestion();
                 } else {
                     elAnswer.classList.add("is-invalid");
-                    elFeedback.innerText = tester.answer().toLowerCase() + " !== " + reply;
+                    elFeedback.innerHTML = tester.answer().toLowerCase() + "<br/>" + reply;
                     elFeedback.setAttribute('style', 'display: block');
                 }
             }
