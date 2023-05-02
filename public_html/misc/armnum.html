@@ -147,7 +147,7 @@
             } else if (tens === 2 && units === 0) {
                 output += this.trans['20'];
             } else {
-                output += this.trans[tens.toString()+'0'] + units > 0 ? this.trans[units.toString()] : '';
+                output += this.trans[tens.toString()+'0'] + (units > 0 ? this.trans[units.toString()] : '');
             }
             return output.trimEnd();
         },
