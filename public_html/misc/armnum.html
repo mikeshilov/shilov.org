@@ -8,13 +8,24 @@
 </head>
 <body style="padding: 10px">
 <div id="container" class="container">
-    <h1 id="number"></h1>
-    <label for="answer" class="form-label">In Armenian</label>
-    <input id="answer" type="text" class="form-control">
-    <div id="feedback" class="invalid-feedback" style="display: none">
+    <div id="well-done" class="alert alert-success" role="alert" style="display: none">
+        <h1 class="alert-heading">Well done!</h1>
     </div>
-    <div class="progress my-3">
-        <div id="progress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div id="game">
+        <h1 id="text-question" style="display: none"></h1>
+        <div id="audio-question" style="display: none">
+            <audio id="audio-control" controls>
+                <source id="audio-source" src="" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        <label for="answer" class="form-label">Answer:</label>
+        <input id="answer" type="text" class="form-control">
+        <div id="feedback" class="invalid-feedback" style="display: none">
+        </div>
+        <div class="progress my-3">
+            <div id="progress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
@@ -183,28 +194,75 @@
         }
     }
 
+    const AudioNumTester = {
+        numbers: [10930, 11843, 12756, 13661, 14574, 15487, 16392, 17205, 18198, 19089, 20170, 21263, 22356, 23441, 24534, 25628, 26712, 27807, 28985, 29079, 30161, 31253],
+        shuffled: null,
+        questNumber: 0,
+        curQuestion: null,
+        maxQuestions: 10,//22,
 
-    const elNumber = document.getElementById("number"),
+        next () {
+            if (this.curQuestion === null || !this.shuffled) {
+                this.shuffled = shuffle(this.numbers);
+                this.questNumber = 0;
+            }
+            if (this.questNumber < Math.min (this.maxQuestions, this.shuffled.length)) {
+                this.questNumber += 1;
+                this.curQuestion = `audio/${this.shuffled[this.questNumber - 1]}.mp3`;
+            }
+            else {
+                this.curQuestion = null;
+            }
+            return this.curQuestion !== null ? this.curQuestion.toString(): null;
+        },
+
+        answer () {
+            if (this.curQuestion !== null){
+                return this.shuffled[this.questNumber - 1].toString()
+            } else {
+                return null;
+            }
+        },
+
+        progress () {
+            return Math.round((this.questNumber - 1) * 100 / this.maxQuestions);
+        }
+    }
+
+
+    const elTextQuestion = document.getElementById("text-question"),
+        elAudioQuestion = document.getElementById("audio-question"),
+        elAudioControl = document.getElementById("audio-control"),
+        elAudioSource = document.getElementById("audio-source"),
         elAnswer = document.getElementById("answer"),
         elProgress = document.getElementById("progress"),
-        elContainer = document.getElementById("container"),
+        elWellDone = document.getElementById("well-done"),
+        elGame = document.getElementById("game"),
         elFeedback = document.getElementById("feedback");
 
     function start (tester) {
         function nextQuestion() {
             const question = tester.next();
-            if (question) {
-                elNumber.innerText = question;
-                elAnswer.value = "";
-                elAnswer.classList.remove("is-invalid");
-                const progress = tester.progress();
-                elProgress.setAttribute('aria-valuenow', String(progress));
-                elProgress.setAttribute('style', 'width:' + progress + '%');
-                elFeedback.setAttribute('style', 'display: none');
-            } else {
-                elContainer.innerHTML = "<h1>Well done!</h1>";
+            if (!question) {
+                elGame.style.display = "none";
+                elWellDone.style.display = "block";
                 elAnswer.removeEventListener("keyup", keyUpEventListener);
+            } else {
+                if (question.indexOf('.mp3') > 0) {
+                    elTextQuestion.style.display = "none";
+                    elAudioQuestion.style.display = "block";
+                    elAudioSource.src = question;
+                    elAudioControl.load();
+                } else {
+                    elTextQuestion.innerText = question;
+                }
             }
+            elAnswer.value = "";
+            elAnswer.classList.remove("is-invalid");
+            const progress = tester.progress();
+            elProgress.setAttribute('aria-valuenow', String(progress));
+            elProgress.setAttribute('style', 'width:' + progress + '%');
+            elFeedback.setAttribute('style', 'display: none');
         }
 
         const keyUpEventListener = function (event) {
@@ -221,11 +279,12 @@
         }
 
         elAnswer.addEventListener("keyup", keyUpEventListener);
+        elAudioControl.addEventListener("ended", ()=>elAnswer.focus())
         nextQuestion();
         elAnswer.focus();
     }
 
-    start (Object.create(BigNumTester));
+    start (Object.create(AudioNumTester));
 
 </script>
 </body>
