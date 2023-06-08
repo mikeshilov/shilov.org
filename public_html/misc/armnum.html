@@ -229,6 +229,38 @@
         }
     }
 
+    const PhraseTester= {
+        numbers: shuffle ([...Array(21).keys(), 30, 40, 50, 60, 70, 80, 90, 100, 1000]),
+        phrases: [
+            ["как дела? (informal)", "Ոնց ես"],
+            ["спасибо", "շնորհակալություն"],
+            ["до свидания", "Ցտեսություն"],
+            ["удачи!", "Հաջողություն"],
+            ["У меня есть", "Ես ունեմ"],
+            ["У меня нет", "չունեմ"],
+        ],
+        phraseIndexes: null,
+
+        next () {
+            if (this.phraseIndexes === null) {
+                this.phraseIndexes = shuffle([...Array(this.phrases.length).keys()]);
+                return this.phrases[this.phraseIndexes[0]][0];
+            } else if (this.phraseIndexes) {
+                this.phraseIndexes.shift();
+                return this.phraseIndexes ? this.phrases[this.phraseIndexes[0]][0] : null;
+            }
+            else
+                return null;
+        },
+
+        answer () {
+            return this.phrases[this.phraseIndexes[0]][1];
+        },
+
+        progress () {
+            return Math.round((this.phrases.length - this.phraseIndexes.length) * 100 / this.phrases.length);
+        }
+    }
 
     const elTextQuestion = document.getElementById("text-question"),
         elAudioQuestion = document.getElementById("audio-question"),
@@ -254,6 +286,8 @@
                     elAudioSource.src = question;
                     elAudioControl.load();
                 } else {
+                    elTextQuestion.style.display = "block";
+                    elAudioQuestion.style.display = "none";
                     elTextQuestion.innerText = question;
                 }
             }
@@ -284,7 +318,7 @@
         elAnswer.focus();
     }
 
-    start (Object.create(AudioNumTester));
+    start (Object.create(PhraseTester));
 
 </script>
 </body>
