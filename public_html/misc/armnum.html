@@ -229,7 +229,7 @@
         }
     }
 
-    const PhraseTester= {
+    const PhraseTester = {
         numbers: shuffle ([...Array(21).keys(), 30, 40, 50, 60, 70, 80, 90, 100, 1000]),
         phrases: [
             ["как дела? (informal)", "Ոնց ես"],
@@ -237,7 +237,7 @@
             ["до свидания", "Ցտեսություն"],
             ["удачи!", "Հաջողություն"],
             ["У меня есть", "Ես ունեմ"],
-            ["У меня нет", "չունեմ"],
+            ["У меня нет", "Ես չունեմ"],
         ],
         phraseIndexes: null,
 
@@ -247,7 +247,7 @@
                 return this.phrases[this.phraseIndexes[0]][0];
             } else if (this.phraseIndexes) {
                 this.phraseIndexes.shift();
-                return this.phraseIndexes ? this.phrases[this.phraseIndexes[0]][0] : null;
+                return this.phraseIndexes ? null : this.phrases[this.phraseIndexes[0]][0];
             }
             else
                 return null;
