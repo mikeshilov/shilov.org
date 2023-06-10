@@ -246,7 +246,7 @@
                 return this.phrases[this.phraseIndexes[0]][0];
             } else if (this.phraseIndexes) {
                 this.phraseIndexes.shift();
-                return this.phraseIndexes ? null : this.phrases[this.phraseIndexes[0]][0];
+                return this.phraseIndexes.length ? this.phrases[this.phraseIndexes[0]][0] : null;
             }
             else
                 return null;
