@@ -21,7 +21,12 @@
         </div>
         <label for="answer" class="form-label">Answer:</label>
         <input id="answer" type="text" class="form-control">
-        <div id="feedback" class="invalid-feedback" style="display: none">
+        <div id="feedback" class="invalid-feedback" style="display: none"></div>
+        <div id="pronunciation" style="display: none; margin-top: 1rem">
+            <audio id="pronunciation-control" controls>
+                <source id="pronunciation-source" src="" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
         </div>
         <div class="progress my-3">
             <div id="progress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -230,13 +235,17 @@
     }
 
     const PhraseTester = {
-        phrases: [
-            ["как дела? (informal)", "Ոնց ես"],
-            ["спасибо", "շնորհակալություն"],
-            ["до свидания", "Ցտեսություն"],
-            ["удачи!", "Հաջողություն"],
-            ["У меня есть", "Ես ունեմ"],
-            ["У меня нет", "Ես չունեմ"],
+        phrases: [ // till 11:45 in https://www.youtube.com/watch?v=BoagLalMVyg&t=1021s
+            ["всем привет!", "Ողջույն բոլորին", 1],
+            ["приятно познакомиться", "հաճելի է ծանոթանալ", 2],
+            ["до встречи!","Կտեսնվենք", 3],
+            ["до завтра", "մինչ վաղը", 4],
+            ["как тебя зовут?", "Ինչ է անունըդ", 5],
+            ["меня зовут Миша", "անունս Միշա է", 6],
+            ["сколько тебе лет?", "Քանի տարեկան ես", 7],
+            ["мне 25 лет", "25 տարեկան եմ", 8],
+            ["который час?", "ժամը քանիսն է", 9],
+            ["сейчас четыре часа дня", "ցերեկվա ժամը չորսը է", 10],
         ],
         phraseIndexes: null,
 
@@ -256,6 +265,12 @@
             return this.phrases[this.phraseIndexes[0]][1];
         },
 
+        audio () {
+            return this.phrases[this.phraseIndexes[0]].length > 2
+                ? `phrases/${this.phrases[this.phraseIndexes[0]][2]}.mp3`
+                : null;
+        },
+
         progress () {
             return Math.round((this.phrases.length - this.phraseIndexes.length) * 100 / this.phrases.length);
         }
@@ -265,6 +280,9 @@
         elAudioQuestion = document.getElementById("audio-question"),
         elAudioControl = document.getElementById("audio-control"),
         elAudioSource = document.getElementById("audio-source"),
+        elPronunciation = document.getElementById("pronunciation"),
+        elPronunControl = document.getElementById("pronunciation-control"),
+        elPronunSource = document.getElementById("pronunciation-source"),
         elAnswer = document.getElementById("answer"),
         elProgress = document.getElementById("progress"),
         elWellDone = document.getElementById("well-done"),
@@ -288,6 +306,16 @@
                     elTextQuestion.style.display = "block";
                     elAudioQuestion.style.display = "none";
                     elTextQuestion.innerText = question;
+                }
+            }
+            if (tester.audio) {
+                const audio = tester.audio();
+                if (audio) {
+                    elPronunciation.style.display = "block";
+                    elPronunSource.src = audio;
+                    elPronunControl.load();
+                } else {
+                    elPronunciation.style.display = "none";
                 }
             }
             elAnswer.value = "";
