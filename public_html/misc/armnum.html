@@ -276,6 +276,65 @@
         }
     }
 
+    const PresentTenseTester = {
+        armPronouns: ['ես','դու','նա','մենք','դուք','նրանք'],
+        rusPronouns: ['я','ты','он','мы','вы','они'],
+        tobe: ['եմ','ես','է','ենք','եք','են'],
+        verbs: [
+            ['սիրում', ['люблю','любишь','любит','любим','любите','любят']],
+            ['կարդում', ['читаю','читаешь','читает','читаем','читаете','читают']],
+            ['գնում', ['покупаю','покупаешь','покупает','покупаем','покупаете','покупают']],
+            ['աշխատում', ['работаю','работаешь','работает','работаем','работаете','работают']],
+        ],
+        adjs: [
+            ['ողջ', ['живой','живые']],
+            ['գեղեցիկ', ['красивый','красивые']],
+            ['խելացի', ['умный','умные']],
+            ['ռուս',['русский','русские']],
+        ],
+        testCount: 10,
+        testNumber: 0,
+        testAnswer: "",
+
+        next () {
+            if (this.testNumber < this.testCount) {
+                this.testNumber += 1;
+                return this.generateTest ();
+            }
+            else
+                return null;
+        },
+
+        rnd (max) {
+            return Math.floor(Math.random() * max);
+        },
+
+        generateTest () {
+            const person = this.rnd(this.armPronouns.length);
+            let question = null;
+            if (this.rnd(10) > 5) {
+                // adjective
+                const adj = this.rnd(this.adjs.length);
+                this.testAnswer = `${this.armPronouns[person]} ${this.adjs[adj][0]} ${this.tobe[person]}`;
+                question = `${this.rusPronouns[person]} - ${this.adjs[adj][1][person > 2 ? 1 : 0]}`;
+            } else {
+                // verb
+                const vrb = this.rnd(this.verbs.length);
+                this.testAnswer = `${this.armPronouns[person]} ${this.verbs[vrb][0]} ${this.tobe[person]}`;
+                question = `${this.rusPronouns[person]} ${this.verbs[vrb][1][person]}`;
+            }
+            return question;
+        },
+
+        answer () {
+            return this.testAnswer;
+        },
+
+        progress () {
+            return Math.round(this.testNumber * 100 / this.testCount);
+        }
+    }
+
     const elTextQuestion = document.getElementById("text-question"),
         elAudioQuestion = document.getElementById("audio-question"),
         elAudioControl = document.getElementById("audio-control"),
@@ -345,7 +404,7 @@
         elAnswer.focus();
     }
 
-    start (Object.create(PhraseTester));
+    start (Object.create(PresentTenseTester));
 
 </script>
 </body>
