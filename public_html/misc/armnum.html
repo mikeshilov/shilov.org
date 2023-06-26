@@ -311,17 +311,21 @@
 
         generateTest () {
             const person = this.rnd(this.armPronouns.length);
+            const negative = this.rnd(10) > 4;
+            const auxv = negative ? (person === 2 ? 'չի' : 'չ' + this.tobe[person]) : this.tobe[person];
             let question = null;
             if (this.rnd(10) > 5) {
                 // adjective
                 const adj = this.rnd(this.adjs.length);
-                this.testAnswer = `${this.armPronouns[person]} ${this.adjs[adj][0]} ${this.tobe[person]}`;
-                question = `${this.rusPronouns[person]} - ${this.adjs[adj][1][person > 2 ? 1 : 0]}`;
+                this.testAnswer = `${this.armPronouns[person]} ${this.adjs[adj][0]} ${auxv}`;
+                question = `${this.rusPronouns[person]} ${negative ? 'не' : '-'} ${this.adjs[adj][1][person > 2 ? 1 : 0]}`;
             } else {
                 // verb
                 const vrb = this.rnd(this.verbs.length);
-                this.testAnswer = `${this.armPronouns[person]} ${this.verbs[vrb][0]} ${this.tobe[person]}`;
-                question = `${this.rusPronouns[person]} ${this.verbs[vrb][1][person]}`;
+                this.testAnswer = negative
+                    ? `${this.armPronouns[person]} ${auxv} ${this.verbs[vrb][0]}`
+                    : `${this.armPronouns[person]} ${this.verbs[vrb][0]} ${auxv}`;
+                question = `${this.rusPronouns[person]}${negative ? ' не ' : ' '}${this.verbs[vrb][1][person]}`;
             }
             return question;
         },
