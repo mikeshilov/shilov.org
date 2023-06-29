@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-    <title>Armenian numbers trainer</title>
+    <link rel="shortcut icon" href="favicon.png">
+    <title>Armenian tests</title>
 </head>
 <body style="padding: 10px">
 <div id="container" class="container">
@@ -55,8 +56,7 @@
         return array;
     }
 
-    function saveConfig ()
-    {
+    function saveConfig () {
         fetch('savecfg.php', {
             method: 'POST',
             headers: {
@@ -73,15 +73,14 @@
             })
     }
 
-    function loadConfigAndStart ()
-    {
+    function loadConfigAndStart () {
         const xhr = new XMLHttpRequest();
         xhr.ontimeout = () => alert (`The request for cfg.json timed out.`);
         xhr.onload = () => {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
                     config = JSON.parse(xhr.responseText);
-                    start (Object.create(PresentTenseTester));
+                    start (new PresentTenseTester());
                 } else {
                     alert ('Loading config error: ' + xhr.statusText);
                 }
@@ -315,25 +314,29 @@
         }
     }
 
-    const PresentTenseTester = {
-        armPronouns: ['ես','դու','նա','մենք','դուք','նրանք'],
-        rusPronouns: ['я','ты','он','мы','вы','они'],
-        tobe: ['եմ','ես','է','ենք','եք','են'],
-        verbs: [
-            ['սիրում', ['люблю','любишь','любит','любим','любите','любят']],
-            ['կարդում', ['читаю','читаешь','читает','читаем','читаете','читают']],
-            ['գնում', ['покупаю','покупаешь','покупает','покупаем','покупаете','покупают']],
-            ['աշխատում', ['работаю','работаешь','работает','работаем','работаете','работают']],
-        ],
-        adjs: [
-            ['ողջ', ['живой','живые']],
-            ['գեղեցիկ', ['красивый','красивые']],
-            ['խելացի', ['умный','умные']],
-            ['ռուս',['русский','русские']],
-        ],
-        testCount: 10,
-        testNumber: 0,
-        testAnswer: "",
+    class PresentTenseTester {
+        constructor() {
+            this.armPronouns = ['ես','դու','նա','մենք','դուք','նրանք'];
+            this.rusPronouns = ['я','ты','он','мы','вы','они'];
+            this.tobe = ['եմ','ես','է','ենք','եք','են'];
+            this.verbs = [
+                ['սիրում', ['люблю','любишь','любит','любим','любите','любят']],
+                ['կարդում', ['читаю','читаешь','читает','читаем','читаете','читают']],
+                ['գնում', ['покупаю','покупаешь','покупает','покупаем','покупаете','покупают']],
+                ['աշխատում', ['работаю','работаешь','работает','работаем','работаете','работают']],
+            ];
+
+            this.adjs = [
+                ['ողջ', ['живой','живые']],
+                ['գեղեցիկ', ['красивый','красивые']],
+                ['խելացի', ['умный','умные']],
+                ['ռուս',['русский','русские']],
+            ];
+
+            this.testCount = 10;
+            this.testNumber = 0;
+            this.testAnswer = "";
+        }
 
         next () {
             if (this.testNumber < this.testCount) {
@@ -342,11 +345,11 @@
             }
             else
                 return null;
-        },
+        }
 
         rnd (max) {
             return Math.floor(Math.random() * max);
-        },
+        }
 
         generateTest () {
             const person = this.rnd(this.armPronouns.length);
@@ -367,11 +370,11 @@
                 question = `${this.rusPronouns[person]}${negative ? ' не ' : ' '}${this.verbs[vrb][1][person]}`;
             }
             return question;
-        },
+        }
 
         answer () {
             return this.testAnswer;
-        },
+        }
 
         progress () {
             return Math.round(this.testNumber * 100 / this.testCount);
