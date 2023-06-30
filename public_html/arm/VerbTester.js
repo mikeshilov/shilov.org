@@ -36,6 +36,8 @@ class VerbTester {
     }
 
     generateTest () {
+        const pronounceCoords = getWordImportanceCoords (this.armPronouns);
+        alert (JSON.stringify(pronounceCoords));
         const person = this.rnd(this.armPronouns.length);
         const negative = this.rnd(10) > 4;
         const auxv = negative ? (person === 2 ? 'չի' : 'չ' + this.tobe[person]) : this.tobe[person];
