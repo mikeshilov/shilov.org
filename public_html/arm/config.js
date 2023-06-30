@@ -57,3 +57,15 @@ function getWordImportanceCoords (words) {
     });
     return wordCoords;
 }
+
+function chooseWordIndex (words) {
+    const wordCoords = getWordImportanceCoords(words);
+    const coords = Object.values(wordCoords).map (x => parseInt(x.toString()));
+    const point = rnd(Math.max(...coords));
+    for (let i=0;i<coords.length;i++) {
+        if (coords[i]>=point) {
+            return i;
+        }
+    }
+    return coords.length-1;
+}

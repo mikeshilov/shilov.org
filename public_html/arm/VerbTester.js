@@ -31,25 +31,20 @@ class VerbTester {
             return null;
     }
 
-    rnd (max) {
-        return Math.floor(Math.random() * max);
-    }
-
     generateTest () {
         const pronounceCoords = getWordImportanceCoords (this.armPronouns);
-        alert (JSON.stringify(pronounceCoords));
-        const person = this.rnd(this.armPronouns.length);
-        const negative = this.rnd(10) > 4;
+        const person = chooseWordIndex (this.armPronouns);
+        const negative = rnd(100) > 50;
         const auxv = negative ? (person === 2 ? 'չի' : 'չ' + this.tobe[person]) : this.tobe[person];
         let question = null;
-        if (this.rnd(10) > 5) {
+        if (rnd(100) > 50) {
             // adjective
-            const adj = this.rnd(this.adjs.length);
+            const adj = chooseWordIndex(this.adjs.map (a => a[0]));
             this.testAnswer = `${this.armPronouns[person]} ${this.adjs[adj][0]} ${auxv}`;
             question = `${this.rusPronouns[person]} ${negative ? 'не' : '-'} ${this.adjs[adj][1][person > 2 ? 1 : 0]}`;
         } else {
             // verb
-            const vrb = this.rnd(this.verbs.length);
+            const vrb = chooseWordIndex(this.verbs.map (v => v[0]));
             this.testAnswer = negative
                 ? `${this.armPronouns[person]} ${auxv} ${this.verbs[vrb][0]}`
                 : `${this.armPronouns[person]} ${this.verbs[vrb][0]} ${auxv}`;

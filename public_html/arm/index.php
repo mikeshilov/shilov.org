@@ -20,7 +20,7 @@
                 Your browser does not support the audio element.
             </audio>
         </div>
-        <label for="answer" class="form-label">in Armenial will be</label>
+        <label for="answer" class="form-label">in <span style="color: red">A</span><span style="color: blue">r</span><span style="color: orangered">m</span>enian will be</label>
         <input id="answer" type="text" class="form-control">
         <div id="feedback" class="invalid-feedback" style="display: none"></div>
         <div id="pronunciation" style="display: none; margin-top: 1rem">

@@ -15,3 +15,7 @@ function shuffle(array) {
 
     return array;
 }
+
+function rnd(max) {
+    return Math.floor(Math.random() * max);
+}
