@@ -32,19 +32,20 @@ class VerbTester {
     }
 
     generateTest () {
-        const pronounceCoords = getWordImportanceCoords (this.armPronouns);
-        const person = chooseWordIndex (this.armPronouns);
+        const [person, personCoords] = chooseWordIndex (this.armPronouns);
         const negative = rnd(100) > 50;
         const auxv = negative ? (person === 2 ? 'չի' : 'չ' + this.tobe[person]) : this.tobe[person];
         let question = null;
         if (rnd(100) > 50) {
             // adjective
-            const adj = chooseWordIndex(this.adjs.map (a => a[0]));
+            const [adj, adjCoords] = chooseWordIndex(this.adjs.map (a => a[0]));
+            refreshWordDistr ([[this.armPronouns, personCoords], [this.adjs.map (a => a[0]), adjCoords]]);
             this.testAnswer = `${this.armPronouns[person]} ${this.adjs[adj][0]} ${auxv}`;
             question = `${this.rusPronouns[person]} ${negative ? 'не' : '-'} ${this.adjs[adj][1][person > 2 ? 1 : 0]}`;
         } else {
             // verb
-            const vrb = chooseWordIndex(this.verbs.map (v => v[0]));
+            const [vrb, vrbCoords] = chooseWordIndex(this.verbs.map (v => v[0]));
+            refreshWordDistr ([[this.armPronouns, personCoords], [this.verbs.map (v => v[0]), vrbCoords]]);
             this.testAnswer = negative
                 ? `${this.armPronouns[person]} ${auxv} ${this.verbs[vrb][0]}`
                 : `${this.armPronouns[person]} ${this.verbs[vrb][0]} ${auxv}`;

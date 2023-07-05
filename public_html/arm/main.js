@@ -82,4 +82,23 @@ function start (tester) {
     elAnswer.focus();
 }
 
+function refreshWordDistr (coordSet) {
+    const htmls = [];
+    for (let s=0; s<coordSet.length; s++) {
+        const words = coordSet[s][0];
+        const coords = coordSet[s][1];
+        htmls.push('<table class="word-distr-table"><tr>');
+        let i=0, prev=0;
+        const max = Math.max(...coords);
+        for (const coord of coords) {
+            const knowing = getWordKnowing(words[i]);
+            htmls.push (`<td class="bg${(i%34)+1}" style="width:${Math.round((coord-prev)*100/max)}%;" title="${words[i] + ', ' + knowing + ', ' + (coord-prev)}">${words[i]}</td>`);
+            i+=1;
+            prev = coord;
+        }
+        htmls.push('</tr></table>');
+    }
+    document.getElementById("word-distr").innerHTML = htmls.join('');
+}
+
 loadConfig(() => start (new VerbTester()));

@@ -47,12 +47,17 @@ function increaseWordKnowing (word) {
     saveConfig();
 }
 
+function getWordKnowing (word) {
+    word = word.toLowerCase();
+    return config.wordKnowing && (word in config.wordKnowing) ? config.wordKnowing[word] : 0;
+}
+
 function getWordImportanceCoords (words) {
     const wordCoords = {};
     let coord = 0;
     words.forEach(word => {
-        word = word.toLowerCase();
-        coord += config.wordKnowing && (word in config.wordKnowing) ? Math.round(1024 / Math.pow(2, config.wordKnowing[word])) : 1024;
+        const knowing = getWordKnowing(word);
+        coord += knowing ? Math.round(1024 / Math.pow(2, knowing)) : 1024;
         wordCoords[word] = coord;
     });
     return wordCoords;
@@ -64,8 +69,8 @@ function chooseWordIndex (words) {
     const point = rnd(Math.max(...coords));
     for (let i=0;i<coords.length;i++) {
         if (coords[i]>=point) {
-            return i;
+            return [i, coords];
         }
     }
-    return coords.length-1;
+    return [coords.length-1, coords];
 }

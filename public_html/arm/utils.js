@@ -19,3 +19,10 @@ function shuffle(array) {
 function rnd(max) {
     return Math.floor(Math.random() * max);
 }
+
+function toggleVisibility(id) {
+    const x = document.getElementById(id);
+    const wasHidden = x.style.display === "none";
+    x.style.display = wasHidden ? "block" : "none";
+    return wasHidden;
+}
