@@ -71,6 +71,7 @@
                 Your browser does not support the audio element.
             </audio>
         </div>
+        <img id="image-question" src="#" style="display: none;margin: 3px;max-height: 100px" alt="image question"/>
         <label for="answer" class="form-label">in <span style="color: red">A</span><span style="color: blue">r</span><span style="color: orangered">m</span>enian will be</label>
         <input id="answer" type="text" class="form-control">
         <div id="feedback" class="invalid-feedback" style="display: none"></div>
@@ -94,6 +95,7 @@
 <script src="utils.js?v=<?=time()?>"></script>
 <script src="config.js?v=<?=time()?>"></script>
 <script src="VerbTester.js?v=<?=time()?>"></script>
+<script src="LetterTester.js?v=<?=time()?>"></script>
 <script src="main.js?v=<?=time()?>"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 const elTextQuestion = document.getElementById("text-question"),
     elAudioQuestion = document.getElementById("audio-question"),
+    elImageQuestion = document.getElementById("image-question"),
     elAudioControl = document.getElementById("audio-control"),
     elAudioSource = document.getElementById("audio-source"),
     elPronunciation = document.getElementById("pronunciation"),
@@ -23,12 +24,18 @@ function start (tester) {
         } else {
             if (question.indexOf('.mp3') > 0) {
                 elTextQuestion.style.display = "none";
+                elImageQuestion.style.display = "none";
                 elAudioQuestion.style.display = "block";
                 elAudioSource.src = question;
                 elAudioControl.load();
+            } else if (question.indexOf('.png') > 0) {
+                elTextQuestion.style.display = "none";
+                elImageQuestion.style.display = "block";
+                elImageQuestion.src = question;
             } else {
                 elTextQuestion.style.display = "block";
                 elAudioQuestion.style.display = "none";
+                elImageQuestion.style.display = "none";
                 elTextQuestion.innerText = question;
             }
         }
@@ -101,4 +108,4 @@ function refreshWordDistr (coordSet) {
     document.getElementById("word-distr").innerHTML = htmls.join('');
 }
 
-loadConfig(() => start (new VerbTester()));
+loadConfig(() => start (new LetterTester()));
