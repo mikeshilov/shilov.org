@@ -40,39 +40,41 @@ function loadConfig (callback) {
     xhr.send(null);
 }
 
-function increaseWordKnowing (word) {
-    word = word.toLowerCase();
-    if (!('wordKnowing' in config)) {
-        config.wordKnowing = {};
+function incSentUsage (storyId, sentId) {
+    if (!('sentUsage' in config)) {
+        config.sentUsage = {};
     }
-    config.wordKnowing[word] = word in config.wordKnowing ? config.wordKnowing[word] + 1 : 1;
+    if (!(storyId in config.sentUsage)) {
+        config.sentUsage[storyId] = {};
+    }
+    config.sentUsage[storyId][sentId] = sentId in config.sentUsage[storyId] ? config.sentUsage[storyId][sentId] + 1 : 1;
     saveConfig();
 }
 
-function getWordKnowing (word) {
-    word = word.toLowerCase();
-    return config.wordKnowing && (word in config.wordKnowing) ? config.wordKnowing[word] : 0;
+function getSentUsage (storyId, sentId) {
+    return config.sentUsage && (storyId in config.sentUsage) && (sentId in config.sentUsage[storyId]) ? config.sentUsage[storyId][sentId] : 0;
 }
 
-function getWordImportanceCoords (words) {
-    const wordCoords = {};
+function getSentImportanceCoords (sentIdsList) {
+    const sentCoords = {};
     let coord = 0;
-    words.forEach(word => {
-        const knowing = getWordKnowing(word);
-        coord += knowing ? Math.round(1024 / Math.pow(2, knowing)) : 1024;
-        wordCoords[word] = coord;
+    sentIdsList.forEach(sentIds => {
+        const ids = sentIds.split('-')
+        const usage = getSentUsage(ids[0], ids[1]);
+        coord += usage ? Math.round(1024 / Math.pow(2, usage)) : 1024;
+        sentCoords[sentIds] = coord;
     });
-    return wordCoords;
+    return sentCoords;
 }
 
-function chooseWordIndex (words) {
-    const wordCoords = getWordImportanceCoords(words);
-    const coords = Object.values(wordCoords).map (x => parseInt(x.toString()));
+function chooseSentence (sentIdsList) {
+    const sentCoords = getSentImportanceCoords(sentIdsList);
+    const coords = Object.values(sentCoords).map (x => parseInt(x.toString()));
     const point = rnd(Math.max(...coords));
     for (let i=0;i<coords.length;i++) {
         if (coords[i]>=point) {
-            return [i, coords];
+            return sentIdsList[i].split('-');
         }
     }
-    return [coords.length-1, coords];
+    return sentIdsList[coords.length-1].split('-');
 }

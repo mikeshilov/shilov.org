@@ -21,12 +21,10 @@
 </head>
 <body style="padding: 10px">
 <div id="container" class="container">
-    <div id="sent-audio">
-        <audio id="audio-control" controls>
-            <source id="audio-source" src="" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-    </div>
+    <audio id="audio-control" controls>
+        <source id="audio-source" src="" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
     <button id="btn-show-text" type="button" class="btn btn-primary sent-btn" onclick="showTextClicked()">Show text</button>
     <div id="sent-text" class="sent-text alert alert-primary" style="display: none"></div>
     <button id="btn-show-trans" type="button" class="btn btn-success sent-btn" style="display: none" onclick="showTransClicked()">Show translation</button>
