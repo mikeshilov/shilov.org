@@ -8,7 +8,7 @@ const elAudioControl = document.getElementById("audio-control"),
 
 let storyId = 0, sentId = 0;
 
-const availableStories = [1];
+const availableStories = [1,2,3,4,5,6,7,8,9];
 const allSentIds = [];
 for (const storyId of availableStories)
     for (const sentId in armSents[storyId])
