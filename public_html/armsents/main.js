@@ -35,7 +35,7 @@ function showTextClicked() {
     elSentText.innerText = armSents[storyId][sentId];
     toggleVisibility (elSentText);
     toggleVisibility (elBtnShowText);
-    toggleVisibility (elBtnShowTrans);
+    toggleVisibility (elBtnNext);
 }
 
 function showTransClicked() {
@@ -46,7 +46,7 @@ function showTransClicked() {
 }
 
 function nextClicked() {
-    toggleVisibility (elSentTrans);
+    // toggleVisibility (elSentTrans);
     toggleVisibility (elSentText);
     toggleVisibility (elBtnNext);
     toggleVisibility (elBtnShowText);
