@@ -26,7 +26,6 @@ function toggleVisibility(x) {
 
 function nextSentence () {
     [storyId, sentId] = chooseSentence(allSentIds);
-    console.log ({storyId, sentId});
     elAudioSource.src = `audio/${storyId}-${sentId}.mp3`;
     elAudioControl.load();
 }
@@ -56,4 +55,21 @@ function nextClicked() {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadConfig(() => nextSentence ());
+});
+
+window.addEventListener("keydown", (event) => {
+    // console.log (event.code);
+    if (event.code === "Space") {
+        if (elAudioControl.paused || elAudioControl.ended)
+            elAudioControl.play();
+        else
+            elAudioControl.pause();
+    }
+    if (event.code === "Enter") {
+        if (elBtnShowText.style.display !== "none") {
+            showTextClicked();
+        } else if (elBtnNext.style.display !== "none") {
+            nextClicked();
+        }
+    }
 });
