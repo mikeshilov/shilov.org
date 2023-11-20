@@ -54,25 +54,27 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("keydown", (event) => {
-    console.log (event.code);
+    // console.log (event.code);
+
+    const handled = () => {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
     if (event.code === "Space") {
         if (elAudioControl.paused || elAudioControl.ended)
             elAudioControl.play();
         else
             elAudioControl.pause();
-        event.preventDefault();
-        event.stopPropagation();
+        handled();
     } else if (event.code === "Enter") {
         nextClicked();
-        event.preventDefault();
-        event.stopPropagation();
+        handled();
     } else if (event.code === "F1") {
         showTextClicked();
-        event.preventDefault();
-        event.stopPropagation();
+        handled();
     } else if (event.code === "F2") {
         showTransClicked();
-        event.preventDefault();
-        event.stopPropagation();
+        handled();
     }
 });
