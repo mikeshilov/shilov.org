@@ -1,8 +1,6 @@
 const elAudioControl = document.getElementById("audio-control"),
     elAudioSource = document.getElementById("audio-source"),
     elBtnShowText = document.getElementById("btn-show-text"),
-    elBtnShowTrans = document.getElementById("btn-show-trans"),
-    elBtnNext = document.getElementById("btn-next"),
     elSentText = document.getElementById("sent-text"),
     elSentTrans = document.getElementById("sent-trans");
 
@@ -18,9 +16,13 @@ function rnd(max) {
     return Math.floor(Math.random() * max);
 }
 
-function toggleVisibility(x) {
-    const wasHidden = x.style.display === "none";
-    x.style.display = wasHidden ? "block" : "none";
+function setVisibility(element, visible) {
+    element.style.display = visible ? "block" : "none";
+}
+
+function toggleVisibility(element) {
+    const wasHidden = element.style.display === "none";
+    setVisibility(element, wasHidden);
     return wasHidden;
 }
 
@@ -32,23 +34,17 @@ function nextSentence () {
 
 function showTextClicked() {
     elSentText.innerText = armSents[storyId][sentId];
-    toggleVisibility (elSentText);
-    toggleVisibility (elBtnShowText);
-    toggleVisibility (elBtnNext);
+    setVisibility (elSentText, true);
 }
 
 function showTransClicked() {
     elSentTrans.innerText = engSents[storyId][sentId];
-    toggleVisibility (elSentTrans);
-    toggleVisibility (elBtnShowTrans);
-    toggleVisibility (elBtnNext);
+    setVisibility (elSentTrans, true);
 }
 
 function nextClicked() {
-    // toggleVisibility (elSentTrans);
-    toggleVisibility (elSentText);
-    toggleVisibility (elBtnNext);
-    toggleVisibility (elBtnShowText);
+    setVisibility (elSentTrans, false);
+    setVisibility (elSentText, false);
     incSentUsage(storyId, sentId);
     nextSentence();
 }
@@ -58,18 +54,25 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("keydown", (event) => {
-    // console.log (event.code);
+    console.log (event.code);
     if (event.code === "Space") {
         if (elAudioControl.paused || elAudioControl.ended)
             elAudioControl.play();
         else
             elAudioControl.pause();
-    }
-    if (event.code === "Enter") {
-        if (elBtnShowText.style.display !== "none") {
-            showTextClicked();
-        } else if (elBtnNext.style.display !== "none") {
-            nextClicked();
-        }
+        event.preventDefault();
+        event.stopPropagation();
+    } else if (event.code === "Enter") {
+        nextClicked();
+        event.preventDefault();
+        event.stopPropagation();
+    } else if (event.code === "F1") {
+        showTextClicked();
+        event.preventDefault();
+        event.stopPropagation();
+    } else if (event.code === "F2") {
+        showTransClicked();
+        event.preventDefault();
+        event.stopPropagation();
     }
 });
