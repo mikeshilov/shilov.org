@@ -24,9 +24,9 @@
     <div id="sent-text" class="sent-text alert alert-primary" style="display: none"></div>
     <div id="sent-trans" class="sent-text alert alert-success" style="display: none"></div>
     <div style="margin: 20px 0">
-        <button id="btn-show-text" type="button" class="btn btn-primary" onclick="showTextClicked()">Show text</button>
-        <button type="button" class="btn btn-success" onclick="showTransClicked()">Show translation</button>
-        <button type="button" class="btn btn-danger" onclick="nextClicked()">Next sentence</button>
+        <button id="btn-show-text" type="button" class="btn btn-primary" onclick="showTextClicked()">Text</button>
+        <button type="button" class="btn btn-success" onclick="showTransClicked()">Trans</button>
+        <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
