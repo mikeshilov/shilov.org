@@ -2,9 +2,12 @@ const elAudioControl = document.getElementById("audio-control"),
     elAudioSource = document.getElementById("audio-source"),
     elBtnShowText = document.getElementById("btn-show-text"),
     elSentText = document.getElementById("sent-text"),
-    elSentTrans = document.getElementById("sent-trans");
+    elSentTrans = document.getElementById("sent-trans"),
+    elAvgPerSent = document.getElementById("avg-per-sent"),
+    elToday = document.getElementById("today");
 
 let storyId = 0, sentId = 0;
+let today = 0;
 
 const availableStories = [100];//[1,2,3,4,5,6,7,8,9];
 const allSentIds = [];
@@ -27,8 +30,10 @@ function toggleVisibility(element) {
 }
 
 function nextSentence () {
-    [storyId, sentId] = chooseSentence(allSentIds);
-    elAudioSource.src = `audio/${storyId}-${sentId}.mp3`;
+    elAvgPerSent.innerText = (Math.round(getAvgPerSent(allSentIds)*10)/10).toString();
+    elToday.innerText = today.toString();
+    const chosenId = chooseSentence(allSentIds);
+    elAudioSource.src = `audio/${chosenId}.mp3`;
     elAudioControl.load();
 }
 
@@ -43,6 +48,7 @@ function showTransClicked() {
 }
 
 function nextClicked() {
+    today += 1;
     setVisibility (elSentTrans, false);
     setVisibility (elSentText, false);
     incSentUsage(storyId, sentId);

@@ -73,8 +73,22 @@ function chooseSentence (sentIdsList) {
     const point = rnd(Math.max(...coords));
     for (let i=0;i<coords.length;i++) {
         if (coords[i]>=point) {
-            return sentIdsList[i].split('-');
+            return sentIdsList[i];
         }
     }
-    return sentIdsList[coords.length-1].split('-');
+    return sentIdsList[coords.length-1];
+}
+
+function getAvgPerSent (sentIdsList) {
+    if (config.sentUsage) {
+        let totalUsage = 0, totalSents = 0;
+        sentIdsList.forEach(sentIds => {
+            const ids = sentIds.split('-')
+            totalUsage += config.sentUsage[ids[0]][ids[1]] ?? 0;
+            totalSents += 1;
+        });
+        return totalSents ? totalUsage/totalSents : 0;
+    } else {
+        return 0;
+    }
 }
