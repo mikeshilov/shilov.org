@@ -7,7 +7,6 @@ const elAudioControl = document.getElementById("audio-control"),
     elToday = document.getElementById("today");
 
 let storyId = 0, sentId = 0;
-let today = 0;
 
 const availableStories = [100];//[1,2,3,4,5,6,7,8,9];
 const allSentIds = [];
@@ -31,7 +30,7 @@ function toggleVisibility(element) {
 
 function nextSentence () {
     elAvgPerSent.innerText = (Math.round(getAvgPerSent(allSentIds)*10)/10).toString();
-    elToday.innerText = today.toString();
+    elToday.innerText = getTodayNumber().toString();
     const chosenId = chooseSentence(allSentIds);
     [storyId, sentId] = chosenId.split('-');
     elAudioSource.src = `audio/${chosenId}.mp3`;
@@ -49,7 +48,6 @@ function showTransClicked() {
 }
 
 function nextClicked() {
-    today += 1;
     setVisibility (elSentTrans, false);
     setVisibility (elSentText, false);
     incSentUsage(storyId, sentId);

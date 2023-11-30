@@ -48,11 +48,30 @@ function incSentUsage (storyId, sentId) {
         config.sentUsage[storyId] = {};
     }
     config.sentUsage[storyId][sentId] = sentId in config.sentUsage[storyId] ? config.sentUsage[storyId][sentId] + 1 : 1;
+    incTodayNumber ();
     saveConfig();
 }
 
 function getSentUsage (storyId, sentId) {
     return config.sentUsage && (storyId in config.sentUsage) && (sentId in config.sentUsage[storyId]) ? config.sentUsage[storyId][sentId] : 0;
+}
+
+function getTodayDate () {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+}
+
+function getTodayNumber () {
+    return config.today && config.today.length === 2 && config.today[0] === getTodayDate () ? config.today[1] : 0;
+}
+
+function incTodayNumber () {
+    const todayDate = getTodayDate ();
+    if (config.today && config.today.length === 2 && config.today[0] === todayDate) {
+        config.today[1] += 1;
+    } else {
+        config.today = [todayDate, 1];
+    }
 }
 
 function getSentImportanceCoords (sentIdsList) {
