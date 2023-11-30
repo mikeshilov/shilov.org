@@ -33,6 +33,7 @@ function nextSentence () {
     elAvgPerSent.innerText = (Math.round(getAvgPerSent(allSentIds)*10)/10).toString();
     elToday.innerText = today.toString();
     const chosenId = chooseSentence(allSentIds);
+    [storyId, sentId] = chosenId.split('-');
     elAudioSource.src = `audio/${chosenId}.mp3`;
     elAudioControl.load();
 }
@@ -64,7 +65,7 @@ elAudioControl.addEventListener("canplaythrough", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
-    // console.log (event.code);
+    //console.log (event.code);
 
     const handled = () => {
         event.preventDefault();
