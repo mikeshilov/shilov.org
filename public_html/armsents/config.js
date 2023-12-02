@@ -103,7 +103,7 @@ function getAvgPerSent (sentIdsList) {
         let totalUsage = 0, totalSents = 0;
         sentIdsList.forEach(sentIds => {
             const ids = sentIds.split('-')
-            totalUsage += config.sentUsage[ids[0]][ids[1]] ?? 0;
+            totalUsage += config.sentUsage[ids[0]] ? (config.sentUsage[ids[0]][ids[1]] ?? 0) : 0;
             totalSents += 1;
         });
         return totalSents ? totalUsage/totalSents : 0;

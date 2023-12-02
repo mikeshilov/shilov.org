@@ -7,9 +7,10 @@ const elAudioControl = document.getElementById("audio-control"),
     elToday = document.getElementById("today");
 
 let storyId = 0, sentId = 0;
-
-const availableStories = [100];//[1,2,3,4,5,6,7,8,9];
+const reguestedStory = new URL (document.URL).searchParams.get("story");
+const availableStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [100]; //[1,2,3,4,5,6,7,8,9];
 const allSentIds = [];
+
 for (const storyId of availableStories)
     for (const sentId in armSents[storyId])
         allSentIds.push(`${storyId}-${sentId}`);
