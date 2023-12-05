@@ -8,7 +8,7 @@ const elAudioControl = document.getElementById("audio-control"),
 
 let storyId = 0, sentId = 0;
 const reguestedStory = new URL (document.URL).searchParams.get("story");
-const availableStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [101]; //[1,2,3,4,5,6,7,8,9];
+const availableStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [101,102]; //[1,2,3,4,5,6,7,8,9];
 const allSentIds = [];
 
 for (const storyId of availableStories)
