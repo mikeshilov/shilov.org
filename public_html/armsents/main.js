@@ -6,14 +6,16 @@ const elAudioControl = document.getElementById("audio-control"),
     elAvgPerSent = document.getElementById("avg-per-sent"),
     elToday = document.getElementById("today");
 
-let storyId = 0, sentId = 0;
-const reguestedStory = new URL (document.URL).searchParams.get("story");
-const availableStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [101,102]; //[1,2,3,4,5,6,7,8,9];
-const allSentIds = [];
+let storyId = 0, sentId = 0, allSentIds;
+const storyTitles=[];
 
-for (const storyId of availableStories)
+for (const storyId in armSents) {
     for (const sentId in armSents[storyId])
-        allSentIds.push(`${storyId}-${sentId}`);
+        if (sentId === "title") {
+            storyTitles[storyId] = armSents[storyId][sentId];
+            break;
+        }
+}
 
 function rnd(max) {
     return Math.floor(Math.random() * max);
@@ -55,8 +57,35 @@ function nextClicked() {
     nextSentence();
 }
 
+function storyClicked(storyId, choose) {
+    console.log (storyId, choose);
+}
+
+function rebuildChosenStoryList(chosenStories) {
+    const elStoryList = document.getElementById("story-list");
+    const html=[];
+    for (const storyId in storyTitles) {
+        const chosen = chosenStories.indexOf(parseInt(storyId)) >= 0;
+        html.push (`<span class="badge ${chosen ? 'bg-dark' : 'bg-secondary'}" onclick="storyClicked(${storyId},${!chosen})">${storyTitles[storyId]}</span>`);
+    }
+    elStoryList.innerHTML = html.join(' ');
+}
+
+function start() {
+    const reguestedStory = new URL (document.URL).searchParams.get("story");
+    const chosenStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [101,102]; //[1,2,3,4,5,6,7,8,9];
+    rebuildChosenStoryList(chosenStories);
+    allSentIds = [];
+    for (const storyId of chosenStories)
+        for (const sentId in armSents[storyId])
+            if (parseInt(sentId)) {
+                allSentIds.push(`${storyId}-${sentId}`);
+            }
+    nextSentence();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    loadConfig(() => nextSentence ());
+    loadConfig(() => start ());
 });
 
 elAudioControl.addEventListener("canplaythrough", (event) => {

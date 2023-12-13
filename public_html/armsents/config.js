@@ -40,6 +40,15 @@ function loadConfig (callback) {
     xhr.send(null);
 }
 
+function getChosenStories () {
+    return config.chosenStories ?? [];
+}
+
+function setChosenStories (chosenStories) {
+    config.chosenStories = chosenStories;
+    saveConfig();
+}
+
 function incSentUsage (storyId, sentId) {
     if (!('sentUsage' in config)) {
         config.sentUsage = {};

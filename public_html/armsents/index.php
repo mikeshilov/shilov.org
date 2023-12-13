@@ -13,6 +13,13 @@
         .sent-text {
             margin: 20px 0;
         }
+        #story-list {
+            margin-top: 20px;
+        }
+        #story-list > span {
+            cursor: pointer;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body style="padding: 10px">
@@ -33,6 +40,7 @@
         TODAY: <span id="today" style="font-weight: bold"></span>,
         AVG: <span id="avg-per-sent" style="font-weight: bold"></span>
     </div>
+    <div id="story-list"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
 <script src="config.js?v=<?=time()?>"></script>
