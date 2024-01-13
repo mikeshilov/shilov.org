@@ -44,8 +44,30 @@ function getChosenStories () {
     return config.chosenStories ?? [];
 }
 
-function setChosenStories (chosenStories) {
-    config.chosenStories = chosenStories;
+function addChosenStory (storyId) {
+    if (Array.isArray(config.chosenStories)) {
+        const index = config.chosenStories.indexOf(storyId);
+        if (index === -1) {
+            config.chosenStories.push(storyId)
+        }
+    }
+    else {
+        config.chosenStories = [];
+    }
+    saveConfig();
+}
+
+function removeChosenStory (storyId) {
+    if (Array.isArray(config.chosenStories)) {
+        while (true) {
+            const index = config.chosenStories.indexOf(storyId);
+            if (index === -1) break;
+            config.chosenStories.splice(index, 1);
+        }
+    }
+    else {
+        config.chosenStories = [];
+    }
     saveConfig();
 }
 
@@ -89,7 +111,7 @@ function getSentImportanceCoords (sentIdsList) {
     sentIdsList.forEach(sentIds => {
         const ids = sentIds.split('-')
         const usage = getSentUsage(ids[0], ids[1]);
-        coord += usage ? Math.round(1024 / Math.pow(2, usage)) : 1024;
+        coord += usage ? Math.round(32768 / Math.pow(2, usage)) : 32768;
         sentCoords[sentIds] = coord;
     });
     return sentCoords;

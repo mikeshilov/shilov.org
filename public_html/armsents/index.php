@@ -34,6 +34,7 @@
         <button id="btn-show-text" type="button" class="btn btn-primary" onclick="showTextClicked()">Text</button>
         <button type="button" class="btn btn-success" onclick="showTransClicked()">Trans</button>
         <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
+        <button type="button" class="btn btn-warning" onclick="skipClicked()">Skip&nbsp;[<span id="usage-count"></span>]</button>
     </div>
     <hr>
     <div style="text-align: right">

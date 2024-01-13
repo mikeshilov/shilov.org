@@ -197,7 +197,7 @@ const armSents = {
         37: "նրանք սիրում են իրենց",
     },
     102: {
-        "title": "Եկեղեցի",
+        "title": "Վերականգնում",
         1: "նա եղբայր է",
         2: "քույրերը հավատում են Աստծուն",
         3: "Ես հավատք ունեմ Աստծուց",
@@ -273,7 +273,7 @@ const armSents = {
     }
 };
 
-const engSents = {
+const tranSents = {
     1:{
         1:"Mike wakes up at six o'clock every morning",
         2:"She cooks breakfast and drinks coffee",

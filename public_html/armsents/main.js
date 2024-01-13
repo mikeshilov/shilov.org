@@ -4,7 +4,8 @@ const elAudioControl = document.getElementById("audio-control"),
     elSentText = document.getElementById("sent-text"),
     elSentTrans = document.getElementById("sent-trans"),
     elAvgPerSent = document.getElementById("avg-per-sent"),
-    elToday = document.getElementById("today");
+    elToday = document.getElementById("today"),
+    elUsageCount = document.getElementById("usage-count");
 
 let storyId = 0, sentId = 0, allSentIds;
 const storyTitles=[];
@@ -36,6 +37,7 @@ function nextSentence () {
     elToday.innerText = getTodayNumber().toString();
     const chosenId = chooseSentence(allSentIds);
     [storyId, sentId] = chosenId.split('-');
+    elUsageCount.innerText = config.sentUsage[storyId] ? (config.sentUsage[storyId][sentId] ?? 0) : '?';
     elAudioSource.src = `audio/${chosenId}.mp3`;
     elAudioControl.load();
 }
@@ -46,7 +48,7 @@ function showTextClicked() {
 }
 
 function showTransClicked() {
-    elSentTrans.innerText = engSents[storyId][sentId];
+    elSentTrans.innerText = tranSents[storyId][sentId];
     setVisibility (elSentTrans, true);
 }
 
@@ -57,31 +59,41 @@ function nextClicked() {
     nextSentence();
 }
 
-function storyClicked(storyId, choose) {
-    console.log (storyId, choose);
+function skipClicked() {
+    setVisibility (elSentTrans, false);
+    setVisibility (elSentText, false);
+    nextSentence();
 }
 
-function rebuildChosenStoryList(chosenStories) {
+function storyClicked(storyId, chosen) {
+    (chosen ? removeChosenStory : addChosenStory)(storyId);
+    start();
+}
+
+function rebuildChosenStoryList() {
+    const reguestedStory = new URL (document.URL).searchParams.get("story");
+    const chosenStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : getChosenStories();// [101,102]; //[1,2,3,4,5,6,7,8,9];
     const elStoryList = document.getElementById("story-list");
     const html=[];
     for (const storyId in storyTitles) {
         const chosen = chosenStories.indexOf(parseInt(storyId)) >= 0;
-        html.push (`<span class="badge ${chosen ? 'bg-dark' : 'bg-secondary'}" onclick="storyClicked(${storyId},${!chosen})">${storyTitles[storyId]}</span>`);
+        html.push (`<span class="badge ${chosen ? 'bg-dark' : 'bg-secondary'}" onclick="storyClicked(${storyId},${chosen})">${storyTitles[storyId]}</span>`);
     }
     elStoryList.innerHTML = html.join(' ');
+    return chosenStories;
 }
 
 function start() {
-    const reguestedStory = new URL (document.URL).searchParams.get("story");
-    const chosenStories = reguestedStory && parseInt(reguestedStory) ? [parseInt(reguestedStory)] : [101,102]; //[1,2,3,4,5,6,7,8,9];
-    rebuildChosenStoryList(chosenStories);
+    const chosenStories = rebuildChosenStoryList();
     allSentIds = [];
     for (const storyId of chosenStories)
         for (const sentId in armSents[storyId])
             if (parseInt(sentId)) {
                 allSentIds.push(`${storyId}-${sentId}`);
             }
-    nextSentence();
+    if (allSentIds.length > 0) {
+        nextSentence();
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -93,7 +105,7 @@ elAudioControl.addEventListener("canplaythrough", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
-    //console.log (event.code);
+    // console.log (event.code);
 
     const handled = () => {
         event.preventDefault();
@@ -114,6 +126,9 @@ window.addEventListener("keydown", (event) => {
         handled();
     } else if (event.code === "F2") {
         showTransClicked();
+        handled();
+    } else if (event.code === "Escape") {
+        skipClicked();
         handled();
     }
 });
