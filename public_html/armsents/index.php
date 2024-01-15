@@ -14,11 +14,28 @@
             margin: 20px 0;
         }
         #story-list {
+            margin-top: 30px;
+        }
+        #difficult-words {
             margin-top: 20px;
         }
         #story-list > span {
             cursor: pointer;
             font-weight: normal;
+        }
+        .word {
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 3px;
+        }
+        .word:hover {
+            color: black;
+            background-color: #90CAF9;
+        }
+        .dec-dw {
+            cursor: pointer;
+            color: darkred;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -33,14 +50,15 @@
     <div style="margin: 20px 0">
         <button id="btn-show-text" type="button" class="btn btn-primary" onclick="showTextClicked()">Text</button>
         <button type="button" class="btn btn-success" onclick="showTransClicked()">Trans</button>
-        <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
         <button type="button" class="btn btn-warning" onclick="skipClicked()">Skip&nbsp;[<span id="usage-count"></span>]</button>
+        <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
     </div>
     <hr>
     <div style="text-align: right">
         TODAY: <span id="today" style="font-weight: bold"></span>,
         AVG: <span id="avg-per-sent" style="font-weight: bold"></span>
     </div>
+    <div id="difficult-words"></div>
     <div id="story-list"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>

@@ -71,6 +71,10 @@ function removeChosenStory (storyId) {
     saveConfig();
 }
 
+function getSentUsage (storyId, sentId) {
+    return config.sentUsage && (storyId in config.sentUsage) && (sentId in config.sentUsage[storyId]) ? config.sentUsage[storyId][sentId] : 0;
+}
+
 function incSentUsage (storyId, sentId) {
     if (!('sentUsage' in config)) {
         config.sentUsage = {};
@@ -83,8 +87,36 @@ function incSentUsage (storyId, sentId) {
     saveConfig();
 }
 
-function getSentUsage (storyId, sentId) {
-    return config.sentUsage && (storyId in config.sentUsage) && (sentId in config.sentUsage[storyId]) ? config.sentUsage[storyId][sentId] : 0;
+function getDifficultWords () {
+    return config.difficultWords ?? {};
+}
+
+function incDifficultWord (word) {
+    if (config.difficultWords) {
+        if (word in config.difficultWords) {
+            config.difficultWords[word] += 1;
+        } else {
+            config.difficultWords[word] = 1;
+        }
+    }
+    else {
+        config.difficultWords = {[word]: 1};
+    }
+    saveConfig();
+}
+
+function decDifficultWord (word) {
+    if (config.difficultWords) {
+        if (word in config.difficultWords) {
+            if (config.difficultWords[word] > 1) {
+                config.difficultWords[word] -= 1;
+            }
+            else {
+                delete config.difficultWords[word];
+            }
+        }
+    }
+    saveConfig();
 }
 
 function getTodayDate () {

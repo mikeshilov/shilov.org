@@ -5,9 +5,10 @@ const elAudioControl = document.getElementById("audio-control"),
     elSentTrans = document.getElementById("sent-trans"),
     elAvgPerSent = document.getElementById("avg-per-sent"),
     elToday = document.getElementById("today"),
-    elUsageCount = document.getElementById("usage-count");
+    elUsageCount = document.getElementById("usage-count"),
+    elDifficultWords = document.getElementById("difficult-words");
 
-let storyId = 0, sentId = 0, allSentIds;
+let storyId = 0, sentId = 0, sentUsage = 0, allSentIds, sentWords=[], dwWordsInSent=[];
 const storyTitles=[];
 
 for (const storyId in armSents) {
@@ -37,13 +38,24 @@ function nextSentence () {
     elToday.innerText = getTodayNumber().toString();
     const chosenId = chooseSentence(allSentIds);
     [storyId, sentId] = chosenId.split('-');
-    elUsageCount.innerText = config.sentUsage[storyId] ? (config.sentUsage[storyId][sentId] ?? 0) : '?';
+    sentWords=armSents[storyId][sentId].split(/\s/);
+    dwWordsInSent=[];
+    sentUsage = config.sentUsage[storyId] ? (config.sentUsage[storyId][sentId] ?? 0) : 0
+    elUsageCount.innerText = sentUsage;
     elAudioSource.src = `audio/${chosenId}.mp3`;
     elAudioControl.load();
 }
 
 function showTextClicked() {
-    elSentText.innerText = armSents[storyId][sentId];
+    if (sentUsage > 1) {
+        const html = [];
+        for (const word of sentWords) {
+            html.push(`<span class="word" onclick="incDWClicked('${word}')">${word}</span>`);
+        }
+        elSentText.innerHTML = html.join(' ');
+    } else {
+        elSentText.innerHTML = sentWords.join(' ');
+    }
     setVisibility (elSentText, true);
 }
 
@@ -56,6 +68,17 @@ function nextClicked() {
     setVisibility (elSentTrans, false);
     setVisibility (elSentText, false);
     incSentUsage(storyId, sentId);
+
+    // decrease word difficulty if sentance is recognized
+    for (const word of sentWords) {
+        const dw = normalizeDW(word);
+        if (dwWordsInSent.indexOf(dw) === -1) {
+            console.log (word);
+            decDifficultWord(dw);
+        }
+    }
+    rebuildDifficultWordList();
+
     nextSentence();
 }
 
@@ -68,6 +91,24 @@ function skipClicked() {
 function storyClicked(storyId, chosen) {
     (chosen ? removeChosenStory : addChosenStory)(storyId);
     start();
+}
+
+function normalizeDW (word) {
+    return word.replace(/[.,!$%&;:()=`«»՝֊՟՞՜՛ՙ՚]/g,"").toLowerCase();
+}
+
+function incDWClicked(word) {
+    const dw = normalizeDW(word);
+    incDifficultWord(dw);
+    if (dwWordsInSent.indexOf(dw) === -1) {
+        dwWordsInSent.push(dw);
+    }
+    rebuildDifficultWordList();
+}
+
+function decDWClicked(word) {
+    decDifficultWord(normalizeDW(word));
+    rebuildDifficultWordList();
 }
 
 function rebuildChosenStoryList() {
@@ -83,7 +124,24 @@ function rebuildChosenStoryList() {
     return chosenStories;
 }
 
+function rebuildDifficultWordList() {
+    const dw = getDifficultWords();
+    const html = [];
+    if (Object.keys(dw).length) {
+        html.push('<h5>Difficult Words</h5>');
+        html.push('<table class="table">');
+        html.push('<tbody>');
+        for (const [word, difficulty] of Object.entries(dw).sort((w1, w2) => w2[1] - w1[1])) {
+            html.push(`<tr><th scope="row">${word}</th><td>${difficulty}</td><td class='dec-dw' onclick="decDWClicked('${word}')">↓</td></tr>`);
+        }
+        html.push('</tbody>');
+        html.push('</table>');
+    }
+    elDifficultWords.innerHTML = html.join(' ');
+}
+
 function start() {
+    rebuildDifficultWordList();
     const chosenStories = rebuildChosenStoryList();
     allSentIds = [];
     for (const storyId of chosenStories)
