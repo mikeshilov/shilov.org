@@ -9,7 +9,7 @@ const elAudioControl = document.getElementById("audio-control"),
     elDifficultWords = document.getElementById("difficult-words");
 
 let storyId = 0, sentId = 0, sentUsage = 0, allSentIds, sentWords=[], dwWordsInSent=[];
-const storyTitles=[];
+const storyTitles=[], dwThreshold = 1;
 
 for (const storyId in armSents) {
     for (const sentId in armSents[storyId])
@@ -47,7 +47,7 @@ function nextSentence () {
 }
 
 function showTextClicked() {
-    if (sentUsage > 1) {
+    if (sentUsage > dwThreshold) {
         const html = [];
         for (const word of sentWords) {
             html.push(`<span class="word" onclick="incDWClicked('${word}')">${word}</span>`);
@@ -70,14 +70,15 @@ function nextClicked() {
     incSentUsage(storyId, sentId);
 
     // decrease word difficulty if sentance is recognized
-    for (const word of sentWords) {
-        const dw = normalizeDW(word);
-        if (dwWordsInSent.indexOf(dw) === -1) {
-            console.log (word);
-            decDifficultWord(dw);
+    if (sentUsage > dwThreshold) {
+        for (const word of sentWords) {
+            const dw = normalizeDW(word);
+            if (dwWordsInSent.indexOf(dw) === -1) {
+                decDifficultWord(dw);
+            }
         }
+        rebuildDifficultWordList();
     }
-    rebuildDifficultWordList();
 
     nextSentence();
 }
