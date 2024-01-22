@@ -70,6 +70,7 @@ function nextClicked() {
     incSentUsage(storyId, sentId);
 
     // decrease word difficulty if sentance is recognized
+    /*
     if (sentUsage > dwThreshold) {
         for (const word of sentWords) {
             const dw = normalizeDW(word);
@@ -79,6 +80,7 @@ function nextClicked() {
         }
         rebuildDifficultWordList();
     }
+    */
 
     nextSentence();
 }
