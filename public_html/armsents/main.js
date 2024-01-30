@@ -9,7 +9,7 @@ const elAudioControl = document.getElementById("audio-control"),
     elDifficultWords = document.getElementById("difficult-words");
 
 let storyId = 0, sentId = 0, sentUsage = 0, allSentIds, sentWords=[], dwWordsInSent=[];
-const storyTitles=[], dwThreshold = 1;
+const storyTitles=[], dwThreshold = 2;
 
 for (const storyId in armSents) {
     for (const sentId in armSents[storyId])
