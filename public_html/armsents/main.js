@@ -6,10 +6,11 @@ const elAudioControl = document.getElementById("audio-control"),
     elAvgPerSent = document.getElementById("avg-per-sent"),
     elToday = document.getElementById("today"),
     elUsageCount = document.getElementById("usage-count"),
-    elDifficultWords = document.getElementById("difficult-words");
+    elDifficultWords = document.getElementById("difficult-words"),
+    elAllowDifficultWords = document.getElementById("chk-allow-dw");
 
 let storyId = 0, sentId = 0, sentUsage = 0, allSentIds, sentWords=[], dwWordsInSent=[];
-const storyTitles=[], dwThreshold = 200;
+const storyTitles=[];
 
 for (const storyId in armSents) {
     for (const sentId in armSents[storyId])
@@ -47,15 +48,11 @@ function nextSentence () {
 }
 
 function showTextClicked() {
-    if (sentUsage > dwThreshold) {
-        const html = [];
-        for (const word of sentWords) {
-            html.push(`<span class="word" onclick="incDWClicked('${word}')">${word}</span>`);
-        }
-        elSentText.innerHTML = html.join(' ');
-    } else {
-        elSentText.innerHTML = sentWords.join(' ');
+    const html = [];
+    for (const word of sentWords) {
+        html.push(`<span class="word" onclick="incDWClicked('${word}')">${word}</span>`);
     }
+    elSentText.innerHTML = html.join(' ');
     setVisibility (elSentText, true);
 }
 
@@ -71,15 +68,13 @@ function nextClicked() {
 
     // decrease word difficulty if sentance is recognized
     /*
-    if (sentUsage > dwThreshold) {
-        for (const word of sentWords) {
-            const dw = normalizeDW(word);
-            if (dwWordsInSent.indexOf(dw) === -1) {
-                decDifficultWord(dw);
-            }
+    for (const word of sentWords) {
+        const dw = normalizeDW(word);
+        if (dwWordsInSent.indexOf(dw) === -1) {
+            decDifficultWord(dw);
         }
-        rebuildDifficultWordList();
     }
+    rebuildDifficultWordList();
     */
 
     nextSentence();
@@ -101,12 +96,17 @@ function normalizeDW (word) {
 }
 
 function incDWClicked(word) {
-    const dw = normalizeDW(word);
-    incDifficultWord(dw);
-    if (dwWordsInSent.indexOf(dw) === -1) {
-        dwWordsInSent.push(dw);
+    if (elAllowDifficultWords.checked) {
+        const dw = normalizeDW(word);
+        incDifficultWord(dw);
+        if (dwWordsInSent.indexOf(dw) === -1) {
+            dwWordsInSent.push(dw);
+        }
+        rebuildDifficultWordList();
+        return true;
+    } else {
+        return false;
     }
-    rebuildDifficultWordList();
 }
 
 function decDWClicked(word) {
@@ -152,6 +152,7 @@ function start() {
             if (parseInt(sentId)) {
                 allSentIds.push(`${storyId}-${sentId}`);
             }
+    elAllowDifficultWords.checked = getAllowDW();
     if (allSentIds.length > 0) {
         nextSentence();
     }
@@ -193,3 +194,12 @@ window.addEventListener("keydown", (event) => {
         handled();
     }
 });
+
+elAllowDifficultWords.addEventListener('change', (event) => {
+    setAllowDW(event.currentTarget.checked);
+    if (event.currentTarget.checked) {
+
+    } else {
+
+    }
+})

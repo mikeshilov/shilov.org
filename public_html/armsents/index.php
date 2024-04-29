@@ -54,10 +54,20 @@
         <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
     </div>
     <hr>
-    <div style="text-align: right">
-        TODAY: <span id="today" style="font-weight: bold"></span>,
-        AVG: <span id="avg-per-sent" style="font-weight: bold"></span>
-    </div>
+    <table style="width: 100%">
+        <tr>
+            <td>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="chk-allow-dw" checked>
+                    <label class="form-check-label" for="chk-allow-dw">Allow adding difficult words</label>
+                </div>
+            </td>
+            <td style="text-align: right">
+                TODAY: <span id="today" style="font-weight: bold"></span>,
+                AVG: <span id="avg-per-sent" style="font-weight: bold"></span>
+            </td>
+        </tr>
+    </table>
     <div id="difficult-words"></div>
     <div id="story-list"></div>
 </div>

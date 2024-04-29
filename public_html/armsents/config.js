@@ -57,6 +57,15 @@ function addChosenStory (storyId) {
     saveConfig();
 }
 
+function getAllowDW () {
+    return config.allowDW ?? false;
+}
+
+function setAllowDW (allow) {
+    config.allowDW = allow;
+    saveConfig();
+}
+
 function removeChosenStory (storyId) {
     if (Array.isArray(config.chosenStories)) {
         while (true) {
