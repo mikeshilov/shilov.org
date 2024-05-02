@@ -57,6 +57,22 @@ function addChosenStory (storyId) {
     saveConfig();
 }
 
+function getAllPerformance () {
+    return config.performance ?? {};
+}
+
+function getPerformanceByDate (date) {
+    return config.performance ? config.performance[date] : [0, 0];
+}
+
+function setPerformance (date, totalWords, difficultWords) {
+    if (!config.performance) {
+        config.performance = {};
+    }
+    config.performance[date] = [totalWords, difficultWords];
+    saveConfig();
+}
+
 function getAllowDW () {
     return config.allowDW ?? false;
 }

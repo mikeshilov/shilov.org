@@ -38,6 +38,7 @@
             font-weight: bold;
         }
     </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>
 <body style="padding: 10px">
 <div id="container" class="container">
@@ -53,6 +54,8 @@
         <button type="button" class="btn btn-warning" onclick="skipClicked()">Skip&nbsp;[<span id="usage-count"></span>]</button>
         <button type="button" class="btn btn-danger" onclick="nextClicked()">Next</button>
     </div>
+    <hr>
+    <div id="chart_div"></div>
     <hr>
     <table style="width: 100%">
         <tr>
@@ -75,5 +78,9 @@
 <script src="config.js?v=<?=time()?>"></script>
 <script src="sentences.js?v=<?=time()?>"></script>
 <script src="main.js?v=<?=time()?>"></script>
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+</script>
 </body>
 </html>

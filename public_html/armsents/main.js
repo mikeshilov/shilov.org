@@ -10,6 +10,7 @@ const elAudioControl = document.getElementById("audio-control"),
     elAllowDifficultWords = document.getElementById("chk-allow-dw");
 
 let storyId = 0, sentId = 0, sentUsage = 0, allSentIds, sentWords=[], dwWordsInSent=[];
+let thisChosen, prevChosen, prevPrevChosen;
 const storyTitles=[];
 
 for (const storyId in armSents) {
@@ -22,6 +23,13 @@ for (const storyId in armSents) {
 
 function rnd(max) {
     return Math.floor(Math.random() * max);
+}
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function setVisibility(element, visible) {
@@ -37,20 +45,29 @@ function toggleVisibility(element) {
 function nextSentence () {
     elAvgPerSent.innerText = (Math.round(getAvgPerSent(allSentIds)*10)/10).toString();
     elToday.innerText = getTodayNumber().toString();
-    const chosenId = chooseSentence(allSentIds);
-    [storyId, sentId] = chosenId.split('-');
+
+    prevPrevChosen = prevChosen;
+    prevChosen = thisChosen;
+    for (let i=0;i<5;i++) {
+        thisChosen = chooseSentence(allSentIds);
+        if ((thisChosen !== prevChosen || prevChosen === undefined) && (thisChosen !== prevPrevChosen || prevPrevChosen === undefined)) {
+            break;
+        }
+    }
+
+    [storyId, sentId] = thisChosen.split('-');
     sentWords=armSents[storyId][sentId].split(/\s/);
     dwWordsInSent=[];
     sentUsage = config.sentUsage[storyId] ? (config.sentUsage[storyId][sentId] ?? 0) : 0
     elUsageCount.innerText = sentUsage;
-    elAudioSource.src = `audio/${chosenId}.mp3`;
+    elAudioSource.src = `audio/${thisChosen}.mp3`;
     elAudioControl.load();
 }
 
 function showTextClicked() {
     const html = [];
     for (const word of sentWords) {
-        html.push(`<span class="word" onclick="incDWClicked('${word}')">${word}</span>`);
+        html.push(`<span class="word" onclick="wordClicked('${word}')">${word}</span>`);
     }
     elSentText.innerHTML = html.join(' ');
     setVisibility (elSentText, true);
@@ -67,15 +84,23 @@ function nextClicked() {
     incSentUsage(storyId, sentId);
 
     // decrease word difficulty if sentance is recognized
-    /*
-    for (const word of sentWords) {
-        const dw = normalizeDW(word);
-        if (dwWordsInSent.indexOf(dw) === -1) {
-            decDifficultWord(dw);
+    if (elAllowDifficultWords.checked) {
+        for (const word of sentWords) {
+            const dw = normalizeDW(word);
+            if (dwWordsInSent.indexOf(dw) === -1) {
+                decDifficultWord(dw);
+            }
         }
+        rebuildDifficultWordList();
     }
-    rebuildDifficultWordList();
-    */
+
+    // update performance
+    const today = formatDate(new Date());
+    let [total, dfclt] = getPerformanceByDate (today);
+    total += sentWords.length;
+    dfclt += dwWordsInSent.length;
+    setPerformance(today, total, dfclt);
+    drawChart();
 
     nextSentence();
 }
@@ -95,14 +120,14 @@ function normalizeDW (word) {
     return word.replace(/[.,!$%&;:()=`«»՝֊՟՞՜՛ՙ՚]/g,"").toLowerCase();
 }
 
-function incDWClicked(word) {
+function wordClicked(word) {
     if (elAllowDifficultWords.checked) {
         const dw = normalizeDW(word);
-        incDifficultWord(dw);
         if (dwWordsInSent.indexOf(dw) === -1) {
             dwWordsInSent.push(dw);
+            incDifficultWord(dw);
+            rebuildDifficultWordList();
         }
-        rebuildDifficultWordList();
         return true;
     } else {
         return false;
@@ -156,6 +181,25 @@ function start() {
     if (allSentIds.length > 0) {
         nextSentence();
     }
+}
+
+function drawChart() {
+    const perf = getAllPerformance();
+    const tbl = [['Date',  'Known', 'Total']];
+    for (const date in perf) {
+        tbl.push([date.substr(8, 2), perf[date][0] - perf[date][1], perf[date][0]])
+    }
+
+    const options = {
+        title: 'Performance',
+        vAxis: {title: 'Words'},
+        isStacked: true,
+        legend: { position: 'bottom' },
+    };
+
+    const chart = new google.visualization.SteppedAreaChart(document.getElementById('chart_div'));
+
+    chart.draw(google.visualization.arrayToDataTable(tbl), options);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
