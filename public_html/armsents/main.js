@@ -159,7 +159,7 @@ function rebuildDifficultWordList() {
         html.push('<h5>Difficult Words</h5>');
         html.push('<table class="table">');
         html.push('<tbody>');
-        for (const [word, difficulty] of Object.entries(dw).sort((w1, w2) => w2[1] - w1[1])) {
+        for (const [word, difficulty] of Object.entries(dw).sort((w1, w2) => w2[1] - w1[1]).slice(0, 10)) {
             html.push(`<tr><th scope="row">${word}</th><td>${difficulty}</td><td class='dec-dw' onclick="decDWClicked('${word}')">↓</td></tr>`);
         }
         html.push('</tbody>');
@@ -185,9 +185,13 @@ function start() {
 
 function drawChart() {
     const perf = getAllPerformance();
-    const tbl = [['Date',  'Known', 'Total']];
+    const tbl = [['Date',  'Known', 'Unknown']];
+    const thresholdTime = (new Date()).getTime() - 1000*60*60*24*14;
     for (const date in perf) {
-        tbl.push([date.substr(8, 2), perf[date][0] - perf[date][1], perf[date][0]])
+        if (Date.parse(date) > thresholdTime) {
+            const item = perf[date];
+            tbl.push([date.substr(8, 2), item[0] - item[1], item[1]])
+        }
     }
 
     const options = {
