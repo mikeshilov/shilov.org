@@ -67,7 +67,7 @@ function nextSentence () {
 function showTextClicked() {
     const html = [];
     for (const word of sentWords) {
-        html.push(`<span class="word" onclick="wordClicked('${word}')">${word}</span>`);
+        html.push(`<span class="word" onclick="wordClicked(this)">${word}</span>`);
     }
     elSentText.innerHTML = html.join(' ');
     setVisibility (elSentText, true);
@@ -120,13 +120,15 @@ function normalizeDW (word) {
     return word.replace(/[.,!$%&;:()=`«»՝֊՟՞՜՛ՙ՚]/g,"").toLowerCase();
 }
 
-function wordClicked(word) {
+function wordClicked(el) {
+    const word = el.innerText;
     if (elAllowDifficultWords.checked) {
         const dw = normalizeDW(word);
         if (dwWordsInSent.indexOf(dw) === -1) {
             dwWordsInSent.push(dw);
             incDifficultWord(dw);
             rebuildDifficultWordList();
+            el.style.animation="word-added 1s";
         }
         return true;
     } else {
@@ -186,12 +188,11 @@ function start() {
 function drawChart() {
     const perf = getAllPerformance();
     const tbl = [['Date',  'Known', 'Unknown']];
-    const thresholdTime = (new Date()).getTime() - 1000*60*60*24*14;
-    for (const date in perf) {
-        if (Date.parse(date) > thresholdTime) {
-            const item = perf[date];
-            tbl.push([date.substr(8, 2), item[0] - item[1], item[1]])
-        }
+    const dates = Object.keys(perf).sort();
+    const datesToShow = 14;
+    for (const date of dates.slice(dates.length <= datesToShow ? 0 : dates.length - datesToShow)) {
+        const item = perf[date];
+        tbl.push([date.substr(8, 2), item[0] - item[1], item[1]])
     }
 
     const options = {

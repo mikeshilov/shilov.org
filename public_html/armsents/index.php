@@ -37,6 +37,10 @@
             color: darkred;
             font-weight: bold;
         }
+        @keyframes word-added {
+            from {background-color: yellow;}
+            to {background-color: transparent;}
+        }
     </style>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>

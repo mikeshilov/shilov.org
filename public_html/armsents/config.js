@@ -62,7 +62,7 @@ function getAllPerformance () {
 }
 
 function getPerformanceByDate (date) {
-    return config.performance ? config.performance[date] : [0, 0];
+    return config.performance && date in config.performance ? config.performance[date] : [0, 0];
 }
 
 function setPerformance (date, totalWords, difficultWords) {
