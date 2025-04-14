@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Чтение</title>
+    <meta charset="utf-8" />
+    <title>Build Reading Plan</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
     <link rel="mask-icon" href="favicon/safari-pinned-tab.svg" color="#5bbad5">
     <link rel="shortcut icon" href="favicon/favicon.ico">
     <meta name="msapplication-TileColor" content="#00aba9">
@@ -16,53 +15,214 @@
 
     <style>
         body {
-            margin: 0;            /* Reset default margin */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
         }
-        iframe {
-            display: block;       /* iframes are inline by default */
-            background: white;
-            border: none;         /* Reset default border */
-            height: 100vh;        /* Viewport-relative units */
-            width: 100vw;
+        .container {
+            max-width: 600px;
+            margin: 3rem auto;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 2rem;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 0.7rem 1.2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .checkbox-group label {
+            font-weight: normal;
+            margin: 0 1rem 0 0;
         }
     </style>
 </head>
 <body>
-<iframe id="iframe"></iframe>
+<div class="container">
+    <h1>Build Reading Plan</h1>
+    <div class="form-group">
+        <label for="title">Book Title:</label>
+        <input type="text" id="title" value="My Book" />
+    </div>
+
+    <div class="checkbox-group">
+        <input type="checkbox" id="twoPagesPerDay" />
+        <label for="twoPagesPerDay">Two Pages per Day?</label>
+    </div>
+
+    <div class="checkbox-group">
+        <input type="checkbox" id="skipSaturday" />
+        <label for="skipSaturday">Skip Saturdays?</label>
+    </div>
+
+    <div class="checkbox-group">
+        <input type="checkbox" id="skipSunday" />
+        <label for="skipSunday">Skip Sundays?</label>
+    </div>
+
+    <div class="form-group">
+        <label for="startDate">Start Date (YYYY-MM-DD):</label>
+        <input type="text" id="startDate" value="2025-01-01" />
+    </div>
+
+    <div class="form-group">
+        <label for="firstPage">First Page:</label>
+        <input type="number" id="firstPage" value="1" />
+    </div>
+
+    <div class="form-group">
+        <label for="lastPage">Last Page:</label>
+        <input type="number" id="lastPage" value="10" />
+    </div>
+
+    <div class="form-group">
+        <label for="fileName">Output File Name (e.g. reading_plan.csv):</label>
+        <input type="text" id="fileName" value="reading_plan.csv" />
+    </div>
+
+    <button onclick="generateReadingPlan()">Generate Reading Plan</button>
+</div>
+
 <script>
-    const iframe = document.getElementById("iframe");
+    function generateReadingPlan() {
+        // Gather parameters from the form
+        const title = document.getElementById('title').value;
+        const twoPagesPerDay = document.getElementById('twoPagesPerDay').checked;
+        const skipSaturday = document.getElementById('skipSaturday').checked;
+        const skipSunday = document.getElementById('skipSunday').checked;
+        const startDate = document.getElementById('startDate').value; // "YYYY-MM-DD"
+        const firstPage = parseInt(document.getElementById('firstPage').value, 10);
+        const lastPage = parseInt(document.getElementById('lastPage').value, 10);
+        const fileName = document.getElementById('fileName').value;
 
-    if('serviceWorker' in navigator)
-        navigator.serviceWorker.register('js/sw.js')
-            .then(reg => console.log('service worker registered'))
-            .catch(err => console.log('service worker not registered: ', err));
+        // Build and download the reading plan
+        const csvContent = buildReadingPlan(
+            title,
+            twoPagesPerDay,
+            skipSaturday,
+            skipSunday,
+            startDate,
+            firstPage,
+            lastPage
+        );
 
-    function eventFire(el, etype){
-        if (el.fireEvent)
-            el.fireEvent('on' + etype);
-        else {
-            const evObj = document.createEvent('Events');
-            evObj.initEvent(etype, true, false);
-            el.dispatchEvent(evObj);
-        }
+        downloadFile(csvContent, fileName);
     }
-  
-    iframe.addEventListener('load', () => {
-        const httpRequest = new XMLHttpRequest();
-        httpRequest.open("GET", "ajax.php?set="+encodeURIComponent(iframe.contentWindow.location.href), true);
-        httpRequest.send();
-        eventFire (iframe.contentWindow.document.getElementById('plustext'), 'click');
-    });
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const httpRequest = new XMLHttpRequest();
-        httpRequest.onreadystatechange = function () {
-            if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200)
-                iframe.src = httpRequest.responseText;
-        };
-        httpRequest.open("GET", "ajax.php", true);
-        httpRequest.send();
-    });
+    function buildReadingPlan(title, twoPagesPerDay, skipSaturday, skipSunday, start, firstPage, lastPage) {
+        // Create list of pages
+        const pages = [];
+        for (let i = firstPage; i <= lastPage; i++) {
+            pages.push(i);
+        }
+
+        // Build the tasks array
+        let tasks = [];
+        if (twoPagesPerDay) {
+            // Number of pairs
+            const totalPairs = Math.ceil(pages.length / 2);
+            for (let i = 0; i < totalPairs; i++) {
+                const firstPg = i * 2 + pages[0];
+                const secondPg = firstPg + 1;
+                if (secondPg <= pages[pages.length - 1]) {
+                    tasks.push(`${title} ${firstPg}-${secondPg}`);
+                } else {
+                    tasks.push(`${title} ${firstPg}`);
+                }
+            }
+        } else {
+            for (let i = 0; i < pages.length; i++) {
+                tasks.push(`${title} ${pages[i]}`);
+            }
+        }
+
+        // Prepare CSV lines
+        const lines = [
+            "TYPE,CONTENT,PRIORITY,INDENT,AUTHOR,RESPONSIBLE,DATE,DATE_LANG,TIMEZONE"
+        ];
+
+        // Parse the start date
+        let curDate = new Date(start); // expects format "YYYY-MM-DD"
+
+        // For each task, find a suitable date (skipping Saturday/Sunday if necessary), and build the line
+        for (let task of tasks) {
+            // The Python code does two checks in a row. We replicate that here:
+            for (let i = 0; i < 2; i++) {
+                // If skipSaturday and current day is Saturday => increment day
+                // In JS, getDay(): Sunday=0, Monday=1, ..., Saturday=6
+                if (skipSaturday && curDate.getDay() === 6) {
+                    curDate.setDate(curDate.getDate() + 1);
+                } else if (skipSunday && curDate.getDay() === 0) {
+                    curDate.setDate(curDate.getDate() + 1);
+                }
+            }
+
+            // Format date as dd MMM yyyy in Russian
+            // Some browsers add "г." for the year in Russian. You can fine-tune or do manual formatting.
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            const dateString = curDate.toLocaleDateString('ru-RU', options);
+
+            lines.push(`task,${task},4,1,,,${dateString},ru,`);
+
+            // Move to the next day
+            curDate.setDate(curDate.getDate() + 1);
+        }
+
+        // Return the joined CSV string
+        return lines.join("\n");
+    }
+
+    function downloadFile(content, fileName) {
+        // Create a Blob from the content
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        // Create a hidden link element
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        // Append to the DOM, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>
 </body>
 </html>
