@@ -196,10 +196,14 @@
                 }
             }
 
-            // Format date as dd MMM yyyy in Russian
-            // Some browsers add "г." for the year in Russian. You can fine-tune or do manual formatting.
-            const options = { day: '2-digit', month: 'short', year: 'numeric' };
-            const dateString = curDate.toLocaleDateString('ru-RU', options);
+            // Manually build the date string as "dd MMM. yyyy г.", e.g. "14 апр 2025".
+            const monthsShort = [
+                'янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+            ];
+            const day = curDate.getDate().toString().padStart(2, '0');
+            const month = monthsShort[curDate.getMonth()];
+            const year = curDate.getFullYear();
+            const dateString = `${day} ${month} ${year}`;
 
             lines.push(`task,${task},4,1,,,${dateString},ru,`);
 
