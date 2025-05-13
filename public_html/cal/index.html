@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --card-shadow: 0 2px 6px rgba(0,0,0,.08);
+            --border: #e3e8ef;
+            --text: #273444;
+            --muted: #6b7280;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Inter", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        #calendars {
+            width: 100%;
+            max-width: 768px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .month {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            padding: 1.25rem 1rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .month h2 {
+            font-weight: 600;
+            text-align: center;
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
+        .calendar {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 2px;
+            table-layout: fixed;
+            font-size: 0.9rem;
+        }
+        .calendar th {
+            padding: 0.5rem 0;
+            color: var(--muted);
+            font-weight: 500;
+        }
+        .calendar td {
+            text-align: center;
+            padding: 10px 0;
+            vertical-align: middle;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.25s, transform 0.15s;
+        }
+        .calendar td:not(.empty):hover {
+            transform: scale(1.05);
+        }
+        .calendar td.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.2"></script>
+    <script>
+        const { Client } = Appwrite;
+    </script>
+</head>
+<body>
+<div id="calendars"></div>
+
+<script>
+    const colors = [null, '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
+    const storageKey = 'calendarColors';
+    let appwriteClient;
+    let databases;
+    let colorData = {};
+    const databaseId = 'calendarDb';
+    const collectionId = 'colors';
+
+    // Cache for color data to minimize API calls
+    async function loadColorsFromAppwrite() {
+        try {
+            const response = await databases.listDocuments(databaseId, collectionId);
+            const newColorData = {};
+
+            response.documents.forEach(doc => {
+                newColorData[doc.dateStr] = doc.colorIndex;
+            });
+
+            colorData = newColorData;
+            return colorData;
+        } catch (error) {
+            console.error('Error loading colors from Appwrite:', error);
+            return {};
+        }
+    }
+
+    // Fallback to localStorage if needed
+    const loadColorsFromLocalStorage = () => {
+        try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; }
+    };
+
+    /** Возвращает HEX‑цвет (или null) */
+    async function getColor(dateStr) {
+        // If we have the data in cache, use it
+        if (Object.keys(colorData).length > 0) {
+            return colorData[dateStr] ? colors[colorData[dateStr]] : null;
+        }
+
+        // Otherwise try to load from Appwrite
+        if (databases) {
+            try {
+                await loadColorsFromAppwrite();
+                return colorData[dateStr] ? colors[colorData[dateStr]] : null;
+            } catch (error) {
+                console.error('Error getting color from Appwrite:', error);
+                // Fallback to localStorage
+                const data = loadColorsFromLocalStorage();
+                return data[dateStr] ? colors[data[dateStr]] : null;
+            }
+        } else {
+            // Fallback to localStorage if Appwrite is not available
+            const data = loadColorsFromLocalStorage();
+            return data[dateStr] ? colors[data[dateStr]] : null;
+        }
+    }
+
+    /** Сохраняет индекс цвета (0 — сброс) */
+    async function setColor(dateStr, colorIndex) {
+        // Update local cache
+        if (colorIndex === 0) {
+            delete colorData[dateStr];
+        } else {
+            colorData[dateStr] = colorIndex;
+        }
+
+        // Try to save to Appwrite
+        if (databases) {
+            try {
+                // First try to find if document exists
+                const query = [
+                    databases.Query.equal('dateStr', dateStr)
+                ];
+
+                const existingDocs = await databases.listDocuments(databaseId, collectionId, query);
+
+                if (colorIndex === 0 && existingDocs.documents.length > 0) {
+                    // Delete the document if colorIndex is 0
+                    await databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
+                } else if (colorIndex > 0) {
+                    // Create or update document
+                    const documentData = {
+                        dateStr: dateStr,
+                        colorIndex: colorIndex
+                    };
+
+                    if (existingDocs.documents.length > 0) {
+                        // Update existing document
+                        await databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
+                    } else {
+                        // Create new document
+                        await databases.createDocument(databaseId, collectionId, 'unique()', documentData);
+                    }
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Error saving color to Appwrite:', error);
+                // Fallback to localStorage
+                const data = loadColorsFromLocalStorage();
+                if (colorIndex === 0) delete data[dateStr]; else data[dateStr] = colorIndex;
+                localStorage.setItem(storageKey, JSON.stringify(data));
+            }
+        } else {
+            // Fallback to localStorage if Appwrite is not available
+            const data = loadColorsFromLocalStorage();
+            if (colorIndex === 0) delete data[dateStr]; else data[dateStr] = colorIndex;
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        }
+    }
+
+    function createCalendars() {
+        const wrap = document.getElementById('calendars');
+        const today = new Date();
+        let y = today.getFullYear();
+        let m = today.getMonth();
+        while (y > 2024 || (y === 2024 && m >= 0)) {
+            wrap.appendChild(buildMonth(y, m));
+            break; // TODO: remove to have all months
+            m--; if (m < 0) { m = 11; y--; }
+        }
+    }
+
+    function buildMonth(year, month) {
+        const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        const firstDay = new Date(year, month, 1).getDay();
+        const days = new Date(year, month + 1, 0).getDate();
+
+        const card = document.createElement('div');
+        card.className = 'month';
+        card.innerHTML = `<h2>${monthNames[month]} ${year}</h2>`;
+
+        const table = document.createElement('table');
+        table.className = 'calendar';
+        table.appendChild(renderHead());
+
+        const tbody = document.createElement('tbody');
+        let row = document.createElement('tr');
+        const offset = (firstDay + 6) % 7; // понедельник = 0
+        for (let i = 0; i < offset; i++) row.appendChild(emptyTD());
+
+        for (let d = 1; d <= days; d++) {
+            if (row.children.length === 7) { tbody.appendChild(row); row = document.createElement('tr'); }
+            row.appendChild(dayTD(year, month, d));
+        }
+        while (row.children.length < 7) row.appendChild(emptyTD());
+        tbody.appendChild(row);
+
+        table.appendChild(tbody);
+        card.appendChild(table);
+        return card;
+    }
+
+    function renderHead() {
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(l => {
+            const th = document.createElement('th');
+            th.textContent = l;
+            tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        return thead;
+    }
+
+    const emptyTD = () => Object.assign(document.createElement('td'), { className: 'empty' });
+
+    function dayTD(y, m, d) {
+        const td = document.createElement('td');
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        td.dataset.date = dateStr;
+        td.textContent = d;
+        // Initialize with default colors and update asynchronously
+        td.style.background = 'var(--card-bg)';
+        td.style.borderColor = 'var(--border)';
+        updateBG(td); // This will update colors asynchronously
+
+        td.addEventListener('click', async () => {
+            // Get current color index from cache or localStorage
+            let currentIdx = 0;
+            if (Object.keys(colorData).length > 0 && colorData[dateStr]) {
+                currentIdx = colorData[dateStr];
+            } else {
+                const localData = loadColorsFromLocalStorage();
+                currentIdx = localData[dateStr] || 0;
+            }
+
+            const next = (currentIdx + 1) % colors.length;
+            await setColor(dateStr, next);
+            await updateBG(td);
+        });
+        return td;
+    }
+
+    async function updateBG(td) {
+        const bg = await getColor(td.dataset.date);
+        td.style.background = bg ?? 'var(--card-bg)';
+        td.style.borderColor = bg ?? 'var(--border)';
+    }
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        try {
+            // Initialize Appwrite client
+            appwriteClient = new Client();
+            appwriteClient
+                .setEndpoint('https://fra.cloud.appwrite.io/v1')
+                .setProject('68230f820010c85a6246');
+
+            // Initialize Databases service
+            const { Databases, Query } = Appwrite;
+            databases = new Databases(appwriteClient);
+            databases.Query = Query;
+
+            // Try to load colors from Appwrite
+            try {
+                await loadColorsFromAppwrite();
+                console.log('Colors loaded from Appwrite');
+            } catch (error) {
+                console.warn('Could not load colors from Appwrite, using localStorage fallback', error);
+                // Load from localStorage as fallback
+                colorData = loadColorsFromLocalStorage();
+            }
+        } catch (error) {
+            console.error('Error initializing Appwrite:', error);
+        }
+
+        // Create calendars regardless of Appwrite initialization status
+        // createCalendars();
+        console.log (getColor("2025-05-01"))
+    });
+
+</script>
+</body>
+</html>
