@@ -67,7 +67,6 @@
 
 <script>
     const colors = [null, '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
-    const storageKey = 'calendarColors';
     window.appwriteClient = null;
     window.databases = null;
     window.account = null;
@@ -86,60 +85,38 @@
                 newColorData[doc.date.substring(0, 10)] = doc.color;
             });
 
-            window.clorData = newColorData;
+            window.colorData = newColorData;
         } catch (error) {
             console.error('Error loading colors from Appwrite:', error);
-            return {};
         }
     }
 
-    // Fallback to localStorage if needed
-    const loadColorsFromLocalStorage = () => {
-        try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; }
-    };
 
     /** Возвращает HEX‑цвет (или null) */
     async function getColor(dateStr) {
-        // If we have the data in cache, use it
-        if (Object.keys(colorData).length > 0) {
-            return colorData[dateStr] ? colors[colorData[dateStr]] : null;
+        // If we have the data in the cache, use it
+        if (Object.keys(window.colorData).length > 0) {
+            return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
         }
         return null;
-        /*
-        // Otherwise try to load from Appwrite
-        if (databases) {
-            try {
-                await loadColorsFromAppwrite();
-                return colorData[dateStr] ? colors[colorData[dateStr]] : null;
-            } catch (error) {
-                console.error('Error getting color from Appwrite:', error);
-                // Fallback to localStorage
-                const data = loadColorsFromLocalStorage();
-                return data[dateStr] ? colors[data[dateStr]] : null;
-            }
-        } else {
-            // Fallback to localStorage if Appwrite is not available
-            const data = loadColorsFromLocalStorage();
-            return data[dateStr] ? colors[data[dateStr]] : null;
-        }
-        */
     }
 
     /** Сохраняет индекс цвета (0 — сброс) */
     async function setColor(dateStr, colorIndex) {
         // Update local cache
         if (colorIndex === 0) {
-            delete colorData[dateStr];
+            delete window.colorData[dateStr];
         } else {
-            colorData[dateStr] = colorIndex;
+            window.colorData[dateStr] = colorIndex;
         }
 
         // Try to save to Appwrite
         if (databases) {
             try {
-                // First try to find if document exists
+                const dateTime = new Date(dateStr).toISOString();
+                // First, try to find if a document exists
                 const query = [
-                    databases.Query.equal('dateStr', dateStr)
+                    databases.Query.equal('date', dateTime)
                 ];
 
                 const existingDocs = await databases.listDocuments(databaseId, collectionId, query);
@@ -148,10 +125,10 @@
                     // Delete the document if colorIndex is 0
                     await databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
                 } else if (colorIndex > 0) {
-                    // Create or update document
+                    // Create or update the document
                     const documentData = {
-                        dateStr: dateStr,
-                        colorIndex: colorIndex
+                        date: dateTime,
+                        color: colorIndex
                     };
 
                     if (existingDocs.documents.length > 0) {
@@ -166,16 +143,7 @@
                 return true;
             } catch (error) {
                 console.error('Error saving color to Appwrite:', error);
-                // Fallback to localStorage
-                const data = loadColorsFromLocalStorage();
-                if (colorIndex === 0) delete data[dateStr]; else data[dateStr] = colorIndex;
-                localStorage.setItem(storageKey, JSON.stringify(data));
             }
-        } else {
-            // Fallback to localStorage if Appwrite is not available
-            const data = loadColorsFromLocalStorage();
-            if (colorIndex === 0) delete data[dateStr]; else data[dateStr] = colorIndex;
-            localStorage.setItem(storageKey, JSON.stringify(data));
         }
     }
 
@@ -186,7 +154,6 @@
         let m = today.getMonth();
         while (y > 2024 || (y === 2024 && m >= 0)) {
             wrap.appendChild(buildMonth(y, m));
-            break; // TODO: remove to have all months
             m--; if (m < 0) { m = 11; y--; }
         }
     }
@@ -246,13 +213,10 @@
         updateBG(td); // This will update colors asynchronously
 
         td.addEventListener('click', async () => {
-            // Get current color index from cache or localStorage
+            // Get current color index from cache
             let currentIdx = 0;
-            if (Object.keys(colorData).length > 0 && colorData[dateStr]) {
-                currentIdx = colorData[dateStr];
-            } else {
-                const localData = loadColorsFromLocalStorage();
-                currentIdx = localData[dateStr] || 0;
+            if (Object.keys(window.colorData).length > 0 && window.colorData[dateStr]) {
+                currentIdx = window.colorData[dateStr];
             }
 
             const next = (currentIdx + 1) % colors.length;
@@ -271,7 +235,6 @@
     // Make functions available to auth.js
     window.createCalendars = createCalendars;
     window.loadColorsFromAppwrite = loadColorsFromAppwrite;
-    window.loadColorsFromLocalStorage = loadColorsFromLocalStorage;
 
 </script>
 <script src="auth.js"></script>

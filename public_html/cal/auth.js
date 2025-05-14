@@ -61,7 +61,7 @@ function updateUIForLoggedInUser() {
     document.getElementById('auth-forms').style.display = 'none';
     document.getElementById('user-info').style.display = 'flex';
     document.getElementById('user-email').textContent = window.currentUser.email;
-    window.createCalendars(); // Load calendars after successful login
+    // Note: createCalendars() will be called after colors are loaded
 }
 
 function updateUIForLoggedOutUser() {
@@ -98,6 +98,7 @@ function initializeAuth() {
                 updateUIForLoggedInUser();
                 // Load colors after login
                 await window.loadColorsFromAppwrite();
+                window.createCalendars(); // Create calendars after colors are loaded
             } else {
                 document.getElementById('login-error').textContent = result.error || 'Login failed';
             }
@@ -111,6 +112,14 @@ function initializeAuth() {
             const result = await signupUser(email, password);
             if (result.success) {
                 updateUIForLoggedInUser();
+                // Load colors after signup
+                try {
+                    await window.loadColorsFromAppwrite();
+                    window.createCalendars(); // Create calendars after colors are loaded
+                } catch (error) {
+                    console.warn('Could not load colors from Appwrite', error);
+                    // Do not create calendars if colors couldn't be loaded
+                }
             } else {
                 document.getElementById('signup-error').textContent = result.error || 'Signup failed';
             }
@@ -141,11 +150,10 @@ async function checkAndSetupSession() {
         // Try to load colors from Appwrite
         try {
             await window.loadColorsFromAppwrite();
-            console.log('Colors loaded from Appwrite');
+            window.createCalendars(); // Create calendars after colors are loaded
         } catch (error) {
-            console.warn('Could not load colors from Appwrite, using localStorage fallback', error);
-            // Load from localStorage as fallback
-            window.colorData = window.loadColorsFromLocalStorage();
+            console.warn('Could not load colors from Appwrite', error);
+            // Do not create calendars if colors couldn't be loaded
         }
     } else {
         updateUIForLoggedOutUser();
