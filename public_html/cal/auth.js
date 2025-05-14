@@ -99,6 +99,7 @@ function initializeAuth() {
                 updateUIForLoggedInUser();
                 // Load colors after login
                 await window.loadColorsFromAppwrite();
+                window.createColorLegend(); // Create color legend
                 window.createCalendars(); // Create calendars after colors are loaded
             } else {
                 document.getElementById('login-error').textContent = result.error || 'Login failed';
@@ -116,6 +117,7 @@ function initializeAuth() {
                 // Load colors after signup
                 try {
                     await window.loadColorsFromAppwrite();
+                    window.createColorLegend(); // Create color legend
                     window.createCalendars(); // Create calendars after colors are loaded
                 } catch (error) {
                     console.warn('Could not load colors from Appwrite', error);
@@ -172,6 +174,7 @@ async function checkAndSetupSession() {
         // Try to load colors from Appwrite
         try {
             await window.loadColorsFromAppwrite();
+            window.createColorLegend(); // Create color legend
             window.createCalendars(); // Create calendars after colors are loaded
         } catch (error) {
             console.warn('Could not load colors from Appwrite', error);

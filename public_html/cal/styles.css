@@ -21,6 +21,36 @@ body {
     /* Space for fixed navbar */
     padding: 90px 1rem 2rem;
 }
+#color-legend {
+    width: 100%;
+    max-width: 768px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin: 0.5rem auto;
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    margin: 0.25rem;
+    min-width: fit-content;
+}
+
+.color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
 #app-container {
     width: 100%;
     max-width: 768px;

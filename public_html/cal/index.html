@@ -13,7 +13,7 @@
 </head>
 <body>
 <nav id="navbar">
-    <div class="nav-brand">Color Calendar</div>
+    <div class="nav-brand"></div>
     <div class="nav-auth">
         <!-- Auth buttons (shown when logged out) -->
         <div class="nav-auth-buttons" id="auth-buttons">
@@ -68,13 +68,17 @@
     </div>
 </nav>
 
+<div id="color-legend" style="display: none"></div>
+
 <div id="app-container">
 
     <div id="calendars"></div>
 </div>
 
 <script>
-    const colors = [null, '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
+    const colors =        [null,       '#64aeba',  '#9bf6ff', '#caffbf', '#ca97a3'];
+    const colorMeanings = ['Nothing',  'Sedative', 'Tech',    'Tranq',   'Anxiolytic'];
+
     window.appwriteClient = null;
     window.databases = null;
     window.account = null;
@@ -240,9 +244,36 @@
         td.style.borderColor = bg ?? 'var(--border)';
     }
 
+    // Create color legend
+    function createColorLegend() {
+        const legendContainer = document.getElementById('color-legend');
+        legendContainer.innerHTML = ''; // Clear existing content
+
+        // Create legend items
+        colorMeanings.forEach((label, index) => {
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box';
+            colorBox.style.background = colors[index] || 'var(--card-bg)';
+            colorBox.style.border = colors[index] ? 'none' : '1px solid var(--border)';
+
+            const labelSpan = document.createElement('span');
+            labelSpan.textContent = label;
+
+            legendItem.appendChild(colorBox);
+            legendItem.appendChild(labelSpan);
+            legendContainer.appendChild(legendItem);
+        });
+
+        legendContainer.style.display = 'flex';
+    }
+
     // Make functions available to auth.js
     window.createCalendars = createCalendars;
     window.loadColorsFromAppwrite = loadColorsFromAppwrite;
+    window.createColorLegend = createColorLegend;
 
 </script>
 <script src="auth.js"></script>
