@@ -5,93 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Calendar</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f4f6f9;
-            --card-bg: #ffffff;
-            --card-shadow: 0 2px 6px rgba(0,0,0,.08);
-            --border: #e3e8ef;
-            --text: #273444;
-            --muted: #6b7280;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: "Inter", sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
-        #calendars {
-            width: 100%;
-            max-width: 768px;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .month {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--card-shadow);
-            padding: 1.25rem 1rem 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        .month h2 {
-            font-weight: 600;
-            text-align: center;
-            margin: 0;
-            font-size: 1.25rem;
-            color: var(--text);
-        }
-        .calendar {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 2px;
-            table-layout: fixed;
-            font-size: 0.9rem;
-        }
-        .calendar th {
-            padding: 0.5rem 0;
-            color: var(--muted);
-            font-weight: 500;
-        }
-        .calendar td {
-            text-align: center;
-            padding: 10px 0;
-            vertical-align: middle;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.25s, transform 0.15s;
-        }
-        .calendar td:not(.empty):hover {
-            transform: scale(1.05);
-        }
-        .calendar td.empty {
-            background: transparent;
-            border: none;
-            cursor: default;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.2"></script>
     <script>
-        const { Client } = Appwrite;
+        const { Client, Account } = Appwrite;
     </script>
 </head>
 <body>
-<div id="calendars"></div>
+<div id="app-container">
+    <div id="auth-container">
+        <div id="auth-forms">
+            <!-- Login Form -->
+            <form id="login-form">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit">Login</button>
+                <div id="login-error" class="error-message"></div>
+                <div class="auth-toggle">
+                    Don't have an account? <a id="show-signup">Sign up</a>
+                </div>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" style="display: none;">
+                <h2>Create Account</h2>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required minlength="8">
+                    <small>Password must be at least 8 characters</small>
+                </div>
+                <button type="submit">Sign Up</button>
+                <div id="signup-error" class="error-message"></div>
+                <div class="auth-toggle">
+                    Already have an account? <a id="show-login">Login</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- User Info (shown when logged in) -->
+        <div id="user-info">
+            <div>
+                <p>Logged in as: <span id="user-email"></span></p>
+            </div>
+            <button id="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div id="calendars"></div>
+</div>
 
 <script>
     const colors = [null, '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
     const storageKey = 'calendarColors';
-    let appwriteClient;
-    let databases;
-    let colorData = {};
+    window.appwriteClient = null;
+    window.databases = null;
+    window.account = null;
+    window.currentUser = null;
+    window.colorData = {};
     const databaseId = '68231077002d32d8e158';
     const collectionId = '682310940035cc31cc0d';
 
@@ -102,11 +83,10 @@
             const newColorData = {};
 
             response.documents.forEach(doc => {
-                newColorData[doc.dateStr] = doc.colorIndex;
+                newColorData[doc.date.substring(0, 10)] = doc.color;
             });
 
-            colorData = newColorData;
-            return colorData;
+            window.clorData = newColorData;
         } catch (error) {
             console.error('Error loading colors from Appwrite:', error);
             return {};
@@ -124,7 +104,8 @@
         if (Object.keys(colorData).length > 0) {
             return colorData[dateStr] ? colors[colorData[dateStr]] : null;
         }
-
+        return null;
+        /*
         // Otherwise try to load from Appwrite
         if (databases) {
             try {
@@ -141,6 +122,7 @@
             const data = loadColorsFromLocalStorage();
             return data[dateStr] ? colors[data[dateStr]] : null;
         }
+        */
     }
 
     /** Сохраняет индекс цвета (0 — сброс) */
@@ -286,37 +268,12 @@
         td.style.borderColor = bg ?? 'var(--border)';
     }
 
-    document.addEventListener('DOMContentLoaded', async function () {
-        try {
-            // Initialize Appwrite client
-            appwriteClient = new Client();
-            appwriteClient
-                .setEndpoint('https://fra.cloud.appwrite.io/v1')
-                .setProject('68230f820010c85a6246');
-
-            // Initialize Databases service
-            const { Databases, Query } = Appwrite;
-            databases = new Databases(appwriteClient);
-            databases.Query = Query;
-
-            // Try to load colors from Appwrite
-            try {
-                await loadColorsFromAppwrite();
-                console.log('Colors loaded from Appwrite');
-            } catch (error) {
-                console.warn('Could not load colors from Appwrite, using localStorage fallback', error);
-                // Load from localStorage as fallback
-                colorData = loadColorsFromLocalStorage();
-            }
-        } catch (error) {
-            console.error('Error initializing Appwrite:', error);
-        }
-
-        // Create calendars regardless of Appwrite initialization status
-        // createCalendars();
-        console.log (getColor("2025-05-01"))
-    });
+    // Make functions available to auth.js
+    window.createCalendars = createCalendars;
+    window.loadColorsFromAppwrite = loadColorsFromAppwrite;
+    window.loadColorsFromLocalStorage = loadColorsFromLocalStorage;
 
 </script>
+<script src="auth.js"></script>
 </body>
 </html>
