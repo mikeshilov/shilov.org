@@ -58,14 +58,15 @@ function showSignupForm() {
 }
 
 function updateUIForLoggedInUser() {
-    document.getElementById('auth-forms').style.display = 'none';
+    document.getElementById('auth-forms').classList.remove('active');
+    document.getElementById('auth-buttons').style.display = 'none';
     document.getElementById('user-info').style.display = 'flex';
     document.getElementById('user-email').textContent = window.currentUser.email;
     // Note: createCalendars() will be called after colors are loaded
 }
 
 function updateUIForLoggedOutUser() {
-    document.getElementById('auth-forms').style.display = 'block';
+    document.getElementById('auth-buttons').style.display = 'flex';
     document.getElementById('user-info').style.display = 'none';
     document.getElementById('calendars').innerHTML = ''; // Clear calendars
 }
@@ -135,6 +136,27 @@ function initializeAuth() {
         // Form toggle links
         document.getElementById('show-signup').addEventListener('click', showSignupForm);
         document.getElementById('show-login').addEventListener('click', showLoginForm);
+
+        // Navbar button event listeners
+        document.getElementById('nav-login-btn').addEventListener('click', function() {
+            showLoginForm();
+            document.getElementById('auth-forms').classList.add('active');
+        });
+
+        document.getElementById('nav-signup-btn').addEventListener('click', function() {
+            showSignupForm();
+            document.getElementById('auth-forms').classList.add('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const authForms = document.getElementById('auth-forms');
+            const navButtons = document.getElementById('auth-buttons');
+
+            if (!authForms.contains(event.target) && !navButtons.contains(event.target)) {
+                authForms.classList.remove('active');
+            }
+        });
 
     } catch (error) {
         console.error('Error initializing Appwrite:', error);

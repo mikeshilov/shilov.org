@@ -12,8 +12,15 @@
     </script>
 </head>
 <body>
-<div id="app-container">
-    <div id="auth-container">
+<nav id="navbar">
+    <div class="nav-brand">Color Calendar</div>
+    <div class="nav-auth">
+        <!-- Auth buttons (shown when logged out) -->
+        <div class="nav-auth-buttons" id="auth-buttons">
+            <button id="nav-login-btn" type="button">Login</button>
+            <button id="nav-signup-btn" type="button">Sign Up</button>
+        </div>
+
         <div id="auth-forms">
             <!-- Login Form -->
             <form id="login-form">
@@ -55,12 +62,13 @@
 
         <!-- User Info (shown when logged in) -->
         <div id="user-info">
-            <div>
-                <p>Logged in as: <span id="user-email"></span></p>
-            </div>
+            <p><span id="user-email"></span></p>
             <button id="logout-btn">Logout</button>
         </div>
     </div>
+</nav>
+
+<div id="app-container">
 
     <div id="calendars"></div>
 </div>
