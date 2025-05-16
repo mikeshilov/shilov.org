@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadConfig(() => start ());
 });
 
-elAudioControl.addEventListener("canplaythrough", (event) => {
+elAudioControl.addEventListener("canplaythrough", ()=> {
     elAudioControl.play();
 });
 

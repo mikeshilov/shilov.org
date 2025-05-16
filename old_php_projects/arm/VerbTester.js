@@ -35,7 +35,7 @@ class VerbTester {
         const [person, personCoords] = chooseWordIndex (this.armPronouns);
         const negative = rnd(100) > 50;
         const auxv = negative ? (person === 2 ? 'չի' : 'չ' + this.tobe[person]) : this.tobe[person];
-        let question = null;
+        let question;
         if (rnd(100) > 50) {
             // adjective
             const [adj, adjCoords] = chooseWordIndex(this.adjs.map (a => a[0]));
