@@ -76,7 +76,7 @@
 </div>
 
 <script>
-    const colors =        [null,       '#64aeba',  '#9bf6ff', '#caffbf', '#ca97a3'];
+    const colors =        [null,       '#c7d2fe',  '#eef0fb', '#a7f3d0', '#fecaca'];
     const colorMeanings = ['Nothing',  'Sedative', 'Tech',    'Tranq',   'Anxiolytic'];
 
     window.appwriteClient = null;
@@ -87,15 +87,55 @@
     const databaseId = '68231077002d32d8e158';
     const collectionId = '682310940035cc31cc0d';
 
+    // Debounce function to limit how often a function can be called
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
+    // Queue to process color updates sequentially
+    const updateQueue = {
+        queue: Promise.resolve(),
+        add: function(fn) {
+            return this.queue = this.queue.then(fn).catch(error => {
+                console.error("Error in update queue:", error);
+                // Continue the queue even if there's an error
+                return Promise.resolve();
+            });
+        }
+    };
+
     // Cache for color data to minimize API calls
     async function loadColorsFromAppwrite() {
         try {
-            const response = await databases.listDocuments(databaseId, collectionId);
             const newColorData = {};
+            let offset = 0;
+            const limit = 100;
 
-            response.documents.forEach(doc => {
-                newColorData[doc.date.substring(0, 10)] = doc.color;
-            });
+            while (true) {
+                const response = await databases.listDocuments(
+                    databaseId,
+                    collectionId,
+                    [
+                        databases.Query.limit(limit),
+                        databases.Query.offset(offset)
+                    ]
+                );
+
+                response.documents.forEach(doc => {
+                    newColorData[doc.datestr] = doc.color;
+                });
+
+                if (response.documents.length < limit) {
+                    break;
+                }
+
+                offset += limit;
+            }
 
             window.colorData = newColorData;
         } catch (error) {
@@ -103,58 +143,82 @@
         }
     }
 
-
     /** Возвращает HEX‑цвет (или null) */
-    async function getColor(dateStr) {
-        // If we have the data in the cache, use it
-        if (Object.keys(window.colorData).length > 0) {
-            return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
+    async function getColor(dateStr, forceRefresh = false) {
+        return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
+
+        // If we need to force a refresh or don't have data in the cache, load all colors at once
+        if (forceRefresh || Object.keys(window.colorData).length === 0) {
+            if (databases) {
+                try {
+                    // Instead of making individual requests, load all colors at once
+                    await loadColorsFromAppwrite();
+                } catch (error) {
+                    console.error('Error loading colors from Appwrite:', error);
+                    // If we can't fetch from Appwrite, fall back to cache
+                }
+            }
         }
-        return null;
+
+        // Return color from the updated cache
+        return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
     }
 
     /** Сохраняет индекс цвета (0 — сброс) */
-    async function setColor(dateStr, colorIndex) {
-        // Update local cache
-        if (colorIndex === 0) {
-            delete window.colorData[dateStr];
-        } else {
-            window.colorData[dateStr] = colorIndex;
+    async function setColor(dateStr, colorIndex, tdElement) {
+        // Start the loader if tdElement is provided
+        if (tdElement) {
+            tdElement.classList.add('loading');
         }
 
-        // Try to save to Appwrite
-        if (databases) {
-            try {
-                const dateTime = new Date(dateStr).toISOString();
-                // First, try to find if a document exists
-                const query = [
-                    databases.Query.equal('date', dateTime)
-                ];
+        try {
+            // Try to save to Appwrite first, only update local cache if successful
+            if (databases) {
+                try {
+                    // First, try to find if a document exists
+                    const query = [
+                        databases.Query.equal('datestr', dateStr)
+                    ];
 
-                const existingDocs = await databases.listDocuments(databaseId, collectionId, query);
+                    const existingDocs = await databases.listDocuments(databaseId, collectionId, query);
 
-                if (colorIndex === 0 && existingDocs.documents.length > 0) {
-                    // Delete the document if colorIndex is 0
-                    await databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
-                } else if (colorIndex > 0) {
-                    // Create or update the document
-                    const documentData = {
-                        date: dateTime,
-                        color: colorIndex
-                    };
+                    if (colorIndex === 0 && existingDocs.documents.length > 0) {
+                        // Delete the document if colorIndex is 0
+                        await databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
+                    } else if (colorIndex > 0) {
+                        // Create or update the document
+                        const documentData = {
+                            datestr: dateStr,
+                            color: colorIndex
+                        };
 
-                    if (existingDocs.documents.length > 0) {
-                        // Update existing document
-                        await databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
-                    } else {
-                        // Create new document
-                        await databases.createDocument(databaseId, collectionId, 'unique()', documentData);
+                        if (existingDocs.documents.length > 0) {
+                            // Update existing document
+                            await databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
+                        } else {
+                            // Create new document
+                            await databases.createDocument(databaseId, collectionId, 'unique()', documentData);
+                        }
                     }
-                }
 
-                return true;
-            } catch (error) {
-                console.error('Error saving color to Appwrite:', error);
+                    // Only update local cache after successful save to Appwrite
+                    if (colorIndex === 0) {
+                        delete window.colorData[dateStr];
+                    } else {
+                        window.colorData[dateStr] = colorIndex;
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error('Error saving color to Appwrite:', error);
+                    return false;
+                }
+            }
+            return false;
+        } finally {
+            // Stop the loader if tdElement is provided
+            if (tdElement) {
+                tdElement.classList.remove('loading');
             }
         }
     }
@@ -214,6 +278,15 @@
 
     const emptyTD = () => Object.assign(document.createElement('td'), { className: 'empty' });
 
+    /**
+     * Creates a table cell (td) element for a specific day, setting its date as a data attribute
+     * and applying asynchronous color updates based on pre-defined logic.
+     *
+     * @param {number} y - The year for the date to be represented in the cell.
+     * @param {number} m - The month for the date to be represented in the cell (0-indexed, e.g., January is 0).
+     * @param {number} d - The day of the month for the date to be represented in the cell.
+     * @return {HTMLTableCellElement} The created table cell element with configured data and event listeners.
+     */
     function dayTD(y, m, d) {
         const td = document.createElement('td');
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -222,7 +295,22 @@
         // Initialize with default colors and update asynchronously
         td.style.background = 'var(--card-bg)';
         td.style.borderColor = 'var(--border)';
-        updateBG(td); // This will update colors asynchronously
+        // This will update colors asynchronously using the cached data
+        updateBG(td, false);
+
+        // Create a debounced function for Appwrite updates
+        const debouncedAppwriteUpdate = debounce((dateStr, colorIndex, tdElement) => {
+            try {
+                // Add this update to the queue to ensure all clicks are processed in sequence
+                // even if they happen in rapid succession
+                updateQueue.add(async () => {
+                    return await setColor(dateStr, colorIndex, tdElement);
+                });
+            } catch (error) {
+                console.error('Error during color update:', error);
+                // In case of error, we might want to revert the UI change, but for simplicity we'll skip that
+            }
+        }, 800); // 800ms debounce delay
 
         td.addEventListener('click', async () => {
             // Get current color index from cache
@@ -232,14 +320,34 @@
             }
 
             const next = (currentIdx + 1) % colors.length;
-            await setColor(dateStr, next);
-            await updateBG(td);
+
+            // Update UI immediately
+            if (next === 0) {
+                delete window.colorData[dateStr];
+            } else {
+                window.colorData[dateStr] = next;
+            }
+
+            // Update the background color immediately
+            td.style.background = colors[next] ?? 'var(--card-bg)';
+            td.style.borderColor = colors[next] ?? 'var(--border)';
+
+            // Debounced Appwrite update
+            debouncedAppwriteUpdate(dateStr, next, td);
         });
         return td;
     }
 
-    async function updateBG(td) {
-        const bg = await getColor(td.dataset.date);
+    /**
+     * Updates the background color and border color of a table cell element based on the provided date data.
+     *
+     * @param {HTMLElement} td - The table cell element whose styles are to be updated.
+     * @param {boolean} [forceRefresh=false] - Optional. If true, forces a refresh of the cached data.
+     * @return {Promise<void>} A promise that resolves when the background and border colors are updated.
+     */
+    async function updateBG(td, forceRefresh = false) {
+        // Use cached data by default, only force refresh when explicitly needed
+        const bg = await getColor(td.dataset.date, forceRefresh);
         td.style.background = bg ?? 'var(--card-bg)';
         td.style.borderColor = bg ?? 'var(--border)';
     }
