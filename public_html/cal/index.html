@@ -7,9 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.2"></script>
-    <script>
-        const { Client, Account } = Appwrite;
-    </script>
 </head>
 <body>
 <nav id="navbar">
@@ -76,8 +73,8 @@
 </div>
 
 <script>
-    const colors =        [null,       '#c7d2fe',  '#eef0fb', '#a7f3d0', '#fecaca'];
-    const colorMeanings = ['Nothing',  'Sedative', 'Tech',    'Tranq',   'Anxiolytic'];
+    const colors =        [null,       '#c7d2fe',  '#eef0fb', '#a7f3d0', '#fef9c3',     '#fecaca'];
+    const colorMeanings = ['Nothing',  'Sedative', 'Tech',    'Tranq',   'Anxiolytic',  'Sed+T|A'];
 
     window.appwriteClient = null;
     window.databases = null;
@@ -117,12 +114,12 @@
             const limit = 100;
 
             while (true) {
-                const response = await databases.listDocuments(
+                const response = await window.databases.listDocuments(
                     databaseId,
                     collectionId,
                     [
-                        databases.Query.limit(limit),
-                        databases.Query.offset(offset)
+                        window.query.limit(limit),
+                        window.query.offset(offset)
                     ]
                 );
 
@@ -173,18 +170,18 @@
 
         try {
             // Try to save to Appwrite first, only update local cache if successful
-            if (databases) {
+            if (window.databases) {
                 try {
                     // First, try to find if a document exists
                     const query = [
-                        databases.Query.equal('datestr', dateStr)
+                        window.query.equal('datestr', dateStr)
                     ];
 
-                    const existingDocs = await databases.listDocuments(databaseId, collectionId, query);
+                    const existingDocs = await window.databases.listDocuments(databaseId, collectionId, query);
 
                     if (colorIndex === 0 && existingDocs.documents.length > 0) {
                         // Delete the document if colorIndex is 0
-                        await databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
+                        await window.databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
                     } else if (colorIndex > 0) {
                         // Create or update the document
                         const documentData = {
@@ -194,10 +191,10 @@
 
                         if (existingDocs.documents.length > 0) {
                             // Update existing document
-                            await databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
+                            await window.databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
                         } else {
                             // Create new document
-                            await databases.createDocument(databaseId, collectionId, 'unique()', documentData);
+                            await window.databases.createDocument(databaseId, collectionId, 'unique()', documentData);
                         }
                     }
 
@@ -252,12 +249,21 @@
         const offset = (firstDay + 6) % 7; // понедельник = 0
         for (let i = 0; i < offset; i++) row.appendChild(emptyTD());
 
+        // Create an array to store all rows
+        const rows = [];
+
         for (let d = 1; d <= days; d++) {
-            if (row.children.length === 7) { tbody.appendChild(row); row = document.createElement('tr'); }
+            if (row.children.length === 7) { 
+                rows.push(row); 
+                row = document.createElement('tr'); 
+            }
             row.appendChild(dayTD(year, month, d));
         }
         while (row.children.length < 7) row.appendChild(emptyTD());
-        tbody.appendChild(row);
+        rows.push(row);
+
+        // Append rows in reverse order
+        rows.reverse().forEach(r => tbody.appendChild(r));
 
         table.appendChild(tbody);
         card.appendChild(table);
@@ -292,6 +298,18 @@
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         td.dataset.date = dateStr;
         td.textContent = d;
+
+        // Check if this cell is today's date
+        const today = new Date();
+        const isToday = today.getFullYear() === y && 
+                        today.getMonth() === m && 
+                        today.getDate() === d;
+
+        // Add 'today' class if this is today's cell
+        if (isToday) {
+            td.classList.add('today');
+        }
+
         // Initialize with default colors and update asynchronously
         td.style.background = 'var(--card-bg)';
         td.style.borderColor = 'var(--border)';
@@ -330,7 +348,11 @@
 
             // Update the background color immediately
             td.style.background = colors[next] ?? 'var(--card-bg)';
-            td.style.borderColor = colors[next] ?? 'var(--border)';
+
+            // Don't override border color for today's cell
+            if (!td.classList.contains('today')) {
+                td.style.borderColor = colors[next] ?? 'var(--border)';
+            }
 
             // Debounced Appwrite update
             debouncedAppwriteUpdate(dateStr, next, td);
@@ -349,7 +371,11 @@
         // Use cached data by default, only force refresh when explicitly needed
         const bg = await getColor(td.dataset.date, forceRefresh);
         td.style.background = bg ?? 'var(--card-bg)';
-        td.style.borderColor = bg ?? 'var(--border)';
+
+        // Don't override border color for today's cell
+        if (!td.classList.contains('today')) {
+            td.style.borderColor = bg ?? 'var(--border)';
+        }
     }
 
     // Create color legend

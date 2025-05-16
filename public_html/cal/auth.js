@@ -74,16 +74,17 @@ function updateUIForLoggedOutUser() {
 // Initialize authentication
 function initializeAuth() {
     try {
+        // Initialize Appwrite services
+        const { Databases, Query, Client, Account } = Appwrite;
+
         // Initialize Appwrite client
         window.appwriteClient = new Client();
         window.appwriteClient
             .setEndpoint('https://fra.cloud.appwrite.io/v1')
             .setProject('68230f820010c85a6246');
 
-        // Initialize Appwrite services
-        const { Databases, Query } = Appwrite;
         window.databases = new Databases(window.appwriteClient);
-        window.databases.Query = Query;
+        window.query = Query;
 
         // Initialize Account service
         window.account = new Account(window.appwriteClient);
