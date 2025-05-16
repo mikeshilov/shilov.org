@@ -152,15 +152,37 @@ button:hover {
     font-size: 0.9rem;
 }
 
-#nav-signup-btn {
+#nav-signup-btn, #download-btn {
     background-color: transparent;
     color: var(--primary);
     border: 1px solid var(--primary);
 }
 
-#nav-signup-btn:hover {
+#nav-signup-btn:hover, #download-btn:hover {
     background-color: rgba(79, 70, 229, 0.1);
 }
+
+/* Logout button SVG styling */
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background-color: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.icon-button:hover {
+    background-color: rgba(79, 70, 229, 0.1);
+}
+
+.icon-button svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
 .error-message {
     color: var(--error);
     margin-top: 0.5rem;

@@ -60,7 +60,30 @@
         <!-- User Info (shown when logged in) -->
         <div id="user-info">
             <p><span id="user-email"></span></p>
-            <button id="logout-btn">Logout</button>
+            <button id="download-btn" class="icon-button" title="Download color data as JSON">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     class="w-5 h-5">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v6m0 0l-3-3m3 3l3-3M4 8V7a2 2 0 012-2h12a2 2 0 012 2v1" />
+                </svg>
+            </button>
+            <button id="logout-btn" class="icon-button" title="Logout">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     class="w-5 h-5">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                </svg>
+            </button>
         </div>
     </div>
 </nav>
@@ -141,23 +164,7 @@
     }
 
     /** Возвращает HEX‑цвет (или null) */
-    async function getColor(dateStr, forceRefresh = false) {
-        return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
-
-        // If we need to force a refresh or don't have data in the cache, load all colors at once
-        if (forceRefresh || Object.keys(window.colorData).length === 0) {
-            if (databases) {
-                try {
-                    // Instead of making individual requests, load all colors at once
-                    await loadColorsFromAppwrite();
-                } catch (error) {
-                    console.error('Error loading colors from Appwrite:', error);
-                    // If we can't fetch from Appwrite, fall back to cache
-                }
-            }
-        }
-
-        // Return color from the updated cache
+    function getColor(dateStr) {
         return window.colorData[dateStr] ? colors[window.colorData[dateStr]] : null;
     }
 
@@ -313,8 +320,7 @@
         // Initialize with default colors and update asynchronously
         td.style.background = 'var(--card-bg)';
         td.style.borderColor = 'var(--border)';
-        // This will update colors asynchronously using the cached data
-        updateBG(td, false);
+        updateBG(td);
 
         // Create a debounced function for Appwrite updates
         const debouncedAppwriteUpdate = debounce((dateStr, colorIndex, tdElement) => {
@@ -364,12 +370,10 @@
      * Updates the background color and border color of a table cell element based on the provided date data.
      *
      * @param {HTMLElement} td - The table cell element whose styles are to be updated.
-     * @param {boolean} [forceRefresh=false] - Optional. If true, forces a refresh of the cached data.
-     * @return {Promise<void>} A promise that resolves when the background and border colors are updated.
      */
-    async function updateBG(td, forceRefresh = false) {
+    function updateBG(td) {
         // Use cached data by default, only force refresh when explicitly needed
-        const bg = await getColor(td.dataset.date, forceRefresh);
+        const bg = getColor(td.dataset.date);
         td.style.background = bg ?? 'var(--card-bg)';
 
         // Don't override border color for today's cell
@@ -404,10 +408,12 @@
         legendContainer.style.display = 'flex';
     }
 
-    // Make functions available to auth.js
+    // Make functions and data available to auth.js
     window.createCalendars = createCalendars;
     window.loadColorsFromAppwrite = loadColorsFromAppwrite;
     window.createColorLegend = createColorLegend;
+    window.colorMeanings = colorMeanings;
+    window.colors = colors;
 
 </script>
 <script src="auth.js"></script>

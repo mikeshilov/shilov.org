@@ -4,7 +4,7 @@
 // Authentication functions
 async function loginUser(email, password) {
     try {
-        const session = await window.account.createEmailPasswordSession(email, password);
+        await window.account.createEmailPasswordSession(email, password);
         window.currentUser = await window.account.get();
         return { success: true, user: window.currentUser };
     } catch (error) {
@@ -69,6 +69,51 @@ function updateUIForLoggedOutUser() {
     document.getElementById('auth-buttons').style.display = 'flex';
     document.getElementById('user-info').style.display = 'none';
     document.getElementById('calendars').innerHTML = ''; // Clear calendars
+}
+
+// Function to download color data as JSON
+function downloadColorData() {
+    try {
+        // Add metadata to the export
+        const exportData = {
+            metadata: {
+                exportDate: new Date().toISOString(),
+                colorMeanings: window.colorMeanings,
+                colors: window.colors
+            },
+            colorData: {}
+        };
+
+        // Add the actual color data
+        for (const dateStr in window.colorData) {
+            exportData.colorData[dateStr] = window.colorData[dateStr];
+        }
+
+        // Convert to JSON string
+        const jsonString = JSON.stringify(exportData, null, 2);
+
+        // Create a blob with the JSON data
+        const blob = new Blob([jsonString], { type: 'application/json' });
+
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger the download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `color-data-${new Date().toISOString().split('T')[0]}.json`;
+
+        // Append the anchor to the body, click it, and remove it
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Release the URL object
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error downloading color data:', error);
+        alert('Failed to download color data. Please try again.');
+    }
 }
 
 // Initialize authentication
@@ -149,6 +194,11 @@ function initializeAuth() {
         document.getElementById('nav-signup-btn').addEventListener('click', function() {
             showSignupForm();
             document.getElementById('auth-forms').classList.add('active');
+        });
+
+        // Download button event listener
+        document.getElementById('download-btn').addEventListener('click', function() {
+            downloadColorData();
         });
 
         // Close dropdown when clicking outside
