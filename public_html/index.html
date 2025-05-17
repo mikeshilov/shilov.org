@@ -77,7 +77,7 @@
     }
     #message {
       font-weight: 600;
-      color: #34d399;
+      color: #d4af37;
       min-height: 1.5em;
     }
     button {
@@ -95,6 +95,11 @@
     button:hover {
       background: rgba(255, 255, 255, 0.2);
     }
+    .button-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -104,8 +109,11 @@
   <div id="board"></div>
 </div>
 
-<button id="restart">Shuffle</button>
-<button id="solve">Solve</button>
+<div class="button-container">
+  <button id="restart">Shuffle</button>
+  <button id="solve">Solve</button>
+  <button id="stop" style="display: none;">Stop</button>
+</div>
 
 <p id="message"></p>
 
@@ -117,13 +125,16 @@
   const boardEl = document.getElementById("board");
   const msgEl = document.getElementById("message");
   const restartBtn = document.getElementById("restart");
+  const solveBtn = document.getElementById("solve");
+  const stopBtn = document.getElementById("stop");
 
   let board = [];
   let won = false;
+  let solving = false;
 
   /** Utils **/
   const pow2 = (id) => 2 ** (id - 1);
-  const tileColor = (id) => `hsl(${id * 24}, 70%, 55%)`;
+  const tileColor = (id) => `hsl(${id * 30 + 210}, 60%, 45%)`;
 
   const getInversions = (arr) => {
     let inv = 0;
@@ -190,10 +201,161 @@
     render();
   };
 
-  restartBtn.addEventListener("click", restart);
+  /** Auto-solver **/
+  const getMovableTiles = () => {
+    const empty = board.indexOf(EMPTY);
+    const er = Math.floor(empty / SIZE);
+    const ec = empty % SIZE;
+    const movable = [];
+
+    // Check all board positions
+    for (let i = 0; i < board.length; i++) {
+      if (i === empty) continue;
+
+      const r = Math.floor(i / SIZE);
+      const c = i % SIZE;
+
+      // Check if adjacent to empty space
+      const adjacent = (r === er && Math.abs(c - ec) === 1) || 
+                       (c === ec && Math.abs(r - er) === 1);
+
+      if (adjacent) {
+        movable.push(i);
+      }
+    }
+
+    return movable;
+  };
+
+  // Calculate Manhattan distance (how far each tile is from its goal position)
+  const calculateManhattanDistance = (b) => {
+    let distance = 0;
+    for (let i = 0; i < b.length; i++) {
+      if (b[i] === EMPTY) continue;
+
+      // Current position
+      const currentRow = Math.floor(i / SIZE);
+      const currentCol = i % SIZE;
+
+      // Goal position
+      const goalIndex = SOLVED.indexOf(b[i]);
+      const goalRow = Math.floor(goalIndex / SIZE);
+      const goalCol = goalIndex % SIZE;
+
+      // Add Manhattan distance for this tile
+      distance += Math.abs(currentRow - goalRow) + Math.abs(currentCol - goalCol);
+    }
+    return distance;
+  };
+
+  // Evaluate which move is best (returns the board with lowest Manhattan distance)
+  const evaluateMoves = (movableTiles) => {
+    let bestScore = Infinity;
+    let bestTileIndex = -1;
+
+    for (const tileIndex of movableTiles) {
+      // Create a copy of the board
+      const tempBoard = [...board];
+      const emptyIndex = tempBoard.indexOf(EMPTY);
+
+      // Simulate the move
+      [tempBoard[tileIndex], tempBoard[emptyIndex]] = [tempBoard[emptyIndex], tempBoard[tileIndex]];
+
+      // Calculate score (lower is better)
+      const score = calculateManhattanDistance(tempBoard);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestTileIndex = tileIndex;
+      }
+    }
+
+    return bestTileIndex;
+  };
+
+  const solvePuzzle = () => {
+    if (won || solving) return;
+
+    solving = true;
+    msgEl.textContent = "Solving...";
+    stopBtn.style.display = "inline-block";
+    solveBtn.style.display = "none";
+
+    // Keep track of previous states to detect loops
+    const previousStates = [];
+    let randomMoveCounter = 0;
+
+    const makeMove = () => {
+      if (!solving || won) {
+        solving = false;
+        return;
+      }
+
+      const movable = getMovableTiles();
+      if (movable.length === 0) {
+        solving = false;
+        return;
+      }
+
+      // Create a string representation of current board state
+      const currentState = board.join(',');
+
+      // Check if we're in a loop (same state appears multiple times)
+      const stateCount = previousStates.filter(state => state === currentState).length;
+      previousStates.push(currentState);
+
+      // Keep the history limited to prevent memory issues
+      if (previousStates.length > 20) {
+        previousStates.shift();
+      }
+
+      let tileIndex;
+
+      // If we detect a potential loop or every 10 moves, make a random move to break out
+      if (stateCount > 2 || randomMoveCounter >= 10) {
+        tileIndex = movable[Math.floor(Math.random() * movable.length)];
+        randomMoveCounter = 0;
+      } else {
+        // Choose the best tile to move
+        tileIndex = evaluateMoves(movable);
+        randomMoveCounter++;
+      }
+
+      moveTile(tileIndex);
+
+      // If puzzle is solved, stop
+      if (won) {
+        solving = false;
+        return;
+      }
+
+      // Wait 1 second before next move
+      setTimeout(makeMove, 1000);
+    };
+
+    // Start making moves
+    makeMove();
+  };
+
+  const stopSolving = () => {
+    solving = false;
+    msgEl.textContent = "";
+    stopBtn.style.display = "none";
+    solveBtn.style.display = "inline-block";
+  };
+
+  restartBtn.addEventListener("click", () => {
+    stopSolving();
+    restart();
+  });
+
+  solveBtn.addEventListener("click", solvePuzzle);
+  stopBtn.addEventListener("click", stopSolving);
 
   /* Init */
   restart();
+  // Auto-start solving when page loads
+  setTimeout(solvePuzzle, 1000);
 </script>
 </body>
 </html>
