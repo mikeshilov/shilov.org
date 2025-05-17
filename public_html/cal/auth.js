@@ -1,49 +1,37 @@
 // Authentication functionality for Color Calendar
-// Uses global variables from index.html: appwriteClient, account, currentUser, databases, colorData
+// Uses the appwriteBackend instance from backend.js
 
 // Authentication functions
 async function loginUser(email, password) {
-    try {
-        await window.account.createEmailPasswordSession(email, password);
-        window.currentUser = await window.account.get();
-        return { success: true, user: window.currentUser };
-    } catch (error) {
-        console.error('Login error:', error);
-        return { success: false, error: error.message };
+    const result = await window.appwriteBackend.login(email, password);
+    if (result.success) {
+        window.currentUser = result.user;
     }
+    return result;
 }
 
 async function signupUser(email, password) {
-    try {
-        const user = await window.account.create('unique()', email, password);
-        // Automatically log in after successful signup
-        await loginUser(email, password);
-        return { success: true, user };
-    } catch (error) {
-        console.error('Signup error:', error);
-        return { success: false, error: error.message };
+    const result = await window.appwriteBackend.signup(email, password);
+    if (result.success) {
+        window.currentUser = result.user;
     }
+    return result;
 }
 
 async function logoutUser() {
-    try {
-        await window.account.deleteSession('current');
+    const result = await window.appwriteBackend.logout();
+    if (result.success) {
         window.currentUser = null;
-        return { success: true };
-    } catch (error) {
-        console.error('Logout error:', error);
-        return { success: false, error: error.message };
     }
+    return result;
 }
 
 async function checkSession() {
-    try {
-        window.currentUser = await window.account.get();
-        return { success: true, user: window.currentUser };
-    } catch (error) {
-        console.log('No active session');
-        return { success: false };
+    const result = await window.appwriteBackend.checkSession();
+    if (result.success) {
+        window.currentUser = result.user;
     }
+    return result;
 }
 
 // UI functions
@@ -119,20 +107,14 @@ function downloadColorData() {
 // Initialize authentication
 function initializeAuth() {
     try {
-        // Initialize Appwrite services
-        const { Databases, Query, Client, Account } = Appwrite;
+        // Initialize Appwrite backend
+        window.appwriteBackend.initialize('https://fra.cloud.appwrite.io/v1', '68230f820010c85a6246');
 
-        // Initialize Appwrite client
-        window.appwriteClient = new Client();
-        window.appwriteClient
-            .setEndpoint('https://fra.cloud.appwrite.io/v1')
-            .setProject('68230f820010c85a6246');
-
-        window.databases = new Databases(window.appwriteClient);
-        window.query = Query;
-
-        // Initialize Account service
-        window.account = new Account(window.appwriteClient);
+        // For backward compatibility
+        window.appwriteClient = window.appwriteBackend.client;
+        window.databases = window.appwriteBackend.databases;
+        window.query = window.appwriteBackend.query;
+        window.account = window.appwriteBackend.account;
 
         // Set up event listeners for auth forms
         document.getElementById('login-form').addEventListener('submit', async function(e) {

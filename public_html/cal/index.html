@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.2"></script>
+    <script src="backend.js"></script>
 </head>
 <body>
 <nav id="navbar">
@@ -133,29 +134,16 @@
     async function loadColorsFromAppwrite() {
         try {
             const newColorData = {};
-            let offset = 0;
-            const limit = 100;
 
-            while (true) {
-                const response = await window.databases.listDocuments(
-                    databaseId,
-                    collectionId,
-                    [
-                        window.query.limit(limit),
-                        window.query.offset(offset)
-                    ]
-                );
+            // Use the backend abstraction to load all documents
+            const documents = await window.appwriteBackend.loadAllDocuments(
+                databaseId,
+                collectionId
+            );
 
-                response.documents.forEach(doc => {
-                    newColorData[doc.datestr] = doc.color;
-                });
-
-                if (response.documents.length < limit) {
-                    break;
-                }
-
-                offset += limit;
-            }
+            documents.forEach(doc => {
+                newColorData[doc.datestr] = doc.color;
+            });
 
             window.colorData = newColorData;
         } catch (error) {
@@ -177,18 +165,19 @@
 
         try {
             // Try to save to Appwrite first, only update local cache if successful
-            if (window.databases) {
+            if (window.appwriteBackend) {
                 try {
                     // First, try to find if a document exists
                     const query = [
-                        window.query.equal('datestr', dateStr)
+                        window.appwriteBackend.query.equal('datestr', dateStr)
                     ];
 
-                    const existingDocs = await window.databases.listDocuments(databaseId, collectionId, query);
+                    const response = await window.appwriteBackend.listDocuments(databaseId, collectionId, query);
+                    const existingDocs = response.documents;
 
-                    if (colorIndex === 0 && existingDocs.documents.length > 0) {
+                    if (colorIndex === 0 && existingDocs.length > 0) {
                         // Delete the document if colorIndex is 0
-                        await window.databases.deleteDocument(databaseId, collectionId, existingDocs.documents[0].$id);
+                        await window.appwriteBackend.deleteDocument(databaseId, collectionId, existingDocs[0].$id);
                     } else if (colorIndex > 0) {
                         // Create or update the document
                         const documentData = {
@@ -196,12 +185,12 @@
                             color: colorIndex
                         };
 
-                        if (existingDocs.documents.length > 0) {
+                        if (existingDocs.length > 0) {
                             // Update existing document
-                            await window.databases.updateDocument(databaseId, collectionId, existingDocs.documents[0].$id, documentData);
+                            await window.appwriteBackend.updateDocument(databaseId, collectionId, existingDocs[0].$id, documentData);
                         } else {
                             // Create new document
-                            await window.databases.createDocument(databaseId, collectionId, 'unique()', documentData);
+                            await window.appwriteBackend.createDocument(databaseId, collectionId, 'unique()', documentData);
                         }
                     }
 
