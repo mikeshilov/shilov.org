@@ -1,5 +1,0 @@
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteRule ^/?$ https://shilov.org/blog/ [L,R=301]
-RewriteRule ^(([a-z0-9]+-)+[a-z0-9]+)/?$ https://shilov.org/blog/$1 [L,R=301]
-</IfModule>
