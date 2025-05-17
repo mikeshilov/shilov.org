@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game of Fifteen</title>
+  <style>
+    :root {
+      --size: 4; /* grid size */
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      color: #fff;
+      background: linear-gradient(135deg, #0f172a, #1e293b 40%, #334155);
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      perspective: 800px;
+      animation: flip-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes flip-in {
+      0% {
+        transform: rotateX(90deg);
+        opacity: 0;
+      }
+      100% {
+        transform: rotateX(0deg);
+        opacity: 1;
+      }
+    }
+    #board-wrapper {
+      padding: 1rem;
+      border-radius: 1.5rem;
+      background: rgba(51, 65, 85, 0.7);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(var(--size), 1fr);
+      gap: 0.75rem;
+      width: min(90vw, 420px);
+    }
+    .tile {
+      aspect-ratio: 1 / 1;
+      border-radius: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tile:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    }
+    .empty {
+      background: transparent !important;
+      box-shadow: none !important;
+      cursor: default;
+    }
+    #message {
+      font-weight: 600;
+      color: #34d399;
+      min-height: 1.5em;
+    }
+    button {
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+<h1>SHILOV.ORG</h1>
+
+<div id="board-wrapper">
+  <div id="board"></div>
+</div>
+
+<p id="message"></p>
+
+<button id="restart">Shuffle</button>
+
+<script>
+  const SIZE = 4;
+  const EMPTY = 0;
+  const SOLVED = Array.from({ length: SIZE * SIZE }, (_, i) => (i + 1) % (SIZE * SIZE));
+
+  const boardEl = document.getElementById("board");
+  const msgEl = document.getElementById("message");
+  const restartBtn = document.getElementById("restart");
+
+  let board = [];
+  let won = false;
+
+  /** Utils **/
+  const pow2 = (id) => 2 ** (id - 1);
+  const tileColor = (id) => `hsl(${id * 24}, 70%, 55%)`;
+
+  const getInversions = (arr) => {
+    let inv = 0;
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        if (arr[i] !== EMPTY && arr[j] !== EMPTY && arr[i] > arr[j]) inv++;
+      }
+    }
+    return inv;
+  };
+
+  const isSolvable = (b) => {
+    const inv = getInversions(b);
+    const blankRow = Math.floor(b.indexOf(EMPTY) / SIZE);
+    if (SIZE % 2 === 1) return inv % 2 === 0;
+    const blankRowFromBottom = SIZE - blankRow;
+    return (inv + blankRowFromBottom) % 2 === 0;
+  };
+
+  const isSolved = (b) => b.every((v, i) => v === SOLVED[i]);
+
+  const shuffleBoard = () => {
+    let b;
+    do {
+      b = [...SOLVED].sort(() => Math.random() - 0.5);
+    } while (!isSolvable(b) || isSolved(b));
+    return b;
+  };
+
+  /** Rendering **/
+  const render = () => {
+    boardEl.innerHTML = "";
+    board.forEach((v, idx) => {
+      const tile = document.createElement("div");
+      tile.className = v === EMPTY ? "tile empty" : "tile";
+      if (v !== EMPTY) {
+        tile.textContent = pow2(v);
+        tile.style.background = tileColor(v);
+        tile.addEventListener("click", () => moveTile(idx));
+      }
+      boardEl.appendChild(tile);
+    });
+    msgEl.textContent = won ? "Поздравляем! Вы собрали пазл." : "";
+  };
+
+  /** Game logic **/
+  const moveTile = (index) => {
+    if (won) return;
+    const empty = board.indexOf(EMPTY);
+    const r = Math.floor(index / SIZE);
+    const c = index % SIZE;
+    const er = Math.floor(empty / SIZE);
+    const ec = empty % SIZE;
+    const adjacent = (r === er && Math.abs(c - ec) === 1) || (c === ec && Math.abs(r - er) === 1);
+    if (!adjacent) return;
+    [board[index], board[empty]] = [board[empty], board[index]];
+    won = isSolved(board);
+    render();
+  };
+
+  const restart = () => {
+    board = shuffleBoard();
+    won = false;
+    render();
+  };
+
+  restartBtn.addEventListener("click", restart);
+
+  /* Init */
+  restart();
+</script>
+</body>
+</html>
