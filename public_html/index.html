@@ -100,6 +100,14 @@
       gap: 1rem;
       justify-content: center;
     }
+  @media (max-width: 450px) {
+    #board {
+      width: min(90vw, 336px); /* 420px * 0.8 = 336px (20% smaller) */
+    }
+    .tile {
+      font-size: 1.2rem; /* 1.5rem * 0.8 = 1.2rem (20% smaller) */
+    }
+  }
   </style>
 </head>
 <body>
@@ -131,6 +139,8 @@
   let board = [];
   let won = false;
   let solving = false;
+  let userClicked = false;
+  let autoMoveTimer = null;
 
   /** Utils **/
   const pow2 = (id) => 2 ** (id - 1);
@@ -173,7 +183,10 @@
       if (v !== EMPTY) {
         tile.textContent = pow2(v);
         tile.style.background = tileColor(v);
-        tile.addEventListener("click", () => moveTile(idx));
+        tile.addEventListener("click", () => {
+          userClicked = true;
+          moveTile(idx);
+        });
       }
       boardEl.appendChild(tile);
     });
@@ -329,8 +342,28 @@
         return;
       }
 
-      // Wait 1 second before next move
-      setTimeout(makeMove, 1000);
+      // Clear any existing timer
+      if (autoMoveTimer) {
+        clearTimeout(autoMoveTimer);
+        autoMoveTimer = null;
+      }
+
+      // Wait 2 second before next move
+      autoMoveTimer = setTimeout(() => {
+        // If user clicked a tile, skip this move but reset the flag
+        // and set a timer to resume automatic moves after 2 seconds
+        if (userClicked) {
+          userClicked = false;
+          // Resume automatic moves after a delay if the user stops clicking
+          autoMoveTimer = setTimeout(() => {
+            if (solving && !won) {
+              makeMove();
+            }
+          }, 4000);
+        } else {
+          makeMove();
+        }
+      }, 2000);
     };
 
     // Start making moves
@@ -342,6 +375,12 @@
     msgEl.textContent = "";
     stopBtn.style.display = "none";
     solveBtn.style.display = "inline-block";
+
+    // Clear any existing timer
+    if (autoMoveTimer) {
+      clearTimeout(autoMoveTimer);
+      autoMoveTimer = null;
+    }
   };
 
   restartBtn.addEventListener("click", () => {
