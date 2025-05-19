@@ -2,399 +2,141 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Game of Fifteen</title>
+  <title>Игра Жизнь — клеточный автомат</title>
   <style>
-    :root {
-      --size: 4; /* grid size */
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2rem;
-      color: #fff;
-      background: linear-gradient(135deg, #0f172a, #1e293b 40%, #334155);
-    }
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      perspective: 800px;
-      animation: flip-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
-    @keyframes flip-in {
-      0% {
-        transform: rotateX(90deg);
-        opacity: 0;
-      }
-      100% {
-        transform: rotateX(0deg);
-        opacity: 1;
-      }
-    }
-    #board-wrapper {
-      padding: 1rem;
-      border-radius: 1.5rem;
-      background: rgba(51, 65, 85, 0.7);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-    }
-    #board {
-      display: grid;
-      grid-template-columns: repeat(var(--size), 1fr);
-      gap: 0.75rem;
-      width: min(90vw, 420px);
-    }
-    .tile {
-      aspect-ratio: 1 / 1;
-      border-radius: 1.3rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #fff;
-      box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.35);
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .tile:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-    }
-    .empty {
-      background: transparent !important;
-      box-shadow: none !important;
-      cursor: default;
-    }
-    #message {
-      font-weight: 600;
-      color: #d4af37;
-      min-height: 1.5em;
-    }
-    button {
-      padding: 0.6rem 1.5rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      cursor: pointer;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-      transition: background 0.2s ease;
-    }
-    button:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    .button-container {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-    }
-  @media (max-width: 450px) {
-    #board {
-      width: min(90vw, 336px); /* 420px * 0.8 = 336px (20% smaller) */
-    }
-    .tile {
-      font-size: 1.2rem; /* 1.5rem * 0.8 = 1.2rem (20% smaller) */
-    }
-  }
+    html,body{margin:0;height:100%;background:#111;overflow:hidden}
+    canvas{display:block;position:fixed;top:0;left:0}
   </style>
 </head>
 <body>
-<h1>SHILOV.ORG</h1>
-
-<div id="board-wrapper">
-  <div id="board"></div>
-</div>
-
-<div class="button-container">
-  <button id="restart">Shuffle</button>
-  <button id="solve">Solve</button>
-  <button id="stop" style="display: none;">Stop</button>
-</div>
-
-<p id="message"></p>
+<canvas id="life"></canvas>
 
 <script>
-  const SIZE = 4;
-  const EMPTY = 0;
-  const SOLVED = Array.from({ length: SIZE * SIZE }, (_, i) => (i + 1) % (SIZE * SIZE));
+  (()=>{
+    // ============ ПАРАМЕТР, который можно менять ========================
+    const cellSize = 24;        // диаметр кружка в пикселях
+    // ====================================================================
 
-  const boardEl = document.getElementById("board");
-  const msgEl = document.getElementById("message");
-  const restartBtn = document.getElementById("restart");
-  const solveBtn = document.getElementById("solve");
-  const stopBtn = document.getElementById("stop");
+    const fadeDuration = 700;  // мс — время затухания/проявления
+    const genInterval  = 500;  // мс — 2 поколения в секунду
 
-  let board = [];
-  let won = false;
-  let solving = false;
-  let userClicked = false;
-  let autoMoveTimer = null;
+    const canvas = document.getElementById('life');
+    const ctx    = canvas.getContext('2d');
 
-  /** Utils **/
-  const pow2 = (id) => 2 ** (id - 1);
-  const tileColor = (id) => `hsl(${id * 30 + 210}, 60%, 45%)`;
+    let rows, cols, cells;
 
-  const getInversions = (arr) => {
-    let inv = 0;
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        if (arr[i] !== EMPTY && arr[j] !== EMPTY && arr[i] > arr[j]) inv++;
+    // --------------------------------------------------------------------
+    const pastel = () => `hsl(${Math.random()*360}, 70%, 75%)`;
+    const now    = () => performance.now();
+
+    class Cell {
+      constructor(live = Math.random() < 0.15) {
+        this.live   = live;
+        this.next   = false;
+        this.color  = live ? pastel() : null;
+        this.opacity= live ? 1 : 0;
+        this.timestamp   = now();
+        this.fromOpacity = this.opacity;
+        this.toOpacity   = this.opacity;
       }
-    }
-    return inv;
-  };
-
-  const isSolvable = (b) => {
-    const inv = getInversions(b);
-    const blankRow = Math.floor(b.indexOf(EMPTY) / SIZE);
-    if (SIZE % 2 === 1) return inv % 2 === 0;
-    const blankRowFromBottom = SIZE - blankRow;
-    return (inv + blankRowFromBottom) % 2 === 0;
-  };
-
-  const isSolved = (b) => b.every((v, i) => v === SOLVED[i]);
-
-  const shuffleBoard = () => {
-    let b;
-    do {
-      b = [...SOLVED].sort(() => Math.random() - 0.5);
-    } while (!isSolvable(b) || isSolved(b));
-    return b;
-  };
-
-  /** Rendering **/
-  const render = () => {
-    boardEl.innerHTML = "";
-    board.forEach((v, idx) => {
-      const tile = document.createElement("div");
-      tile.className = v === EMPTY ? "tile empty" : "tile";
-      if (v !== EMPTY) {
-        tile.textContent = pow2(v);
-        tile.style.background = tileColor(v);
-        tile.addEventListener("click", () => {
-          userClicked = true;
-          moveTile(idx);
-        });
+      startFade(toLive){
+        this.timestamp   = now();
+        this.fromOpacity = this.opacity;
+        this.toOpacity   = toLive ? 1 : 0;
+        if(toLive && !this.color) this.color = pastel();
       }
-      boardEl.appendChild(tile);
-    });
-    msgEl.textContent = won ? "Поздравляем! Вы собрали пазл." : "";
-  };
-
-  /** Game logic **/
-  const moveTile = (index) => {
-    if (won) return;
-    const empty = board.indexOf(EMPTY);
-    const r = Math.floor(index / SIZE);
-    const c = index % SIZE;
-    const er = Math.floor(empty / SIZE);
-    const ec = empty % SIZE;
-    const adjacent = (r === er && Math.abs(c - ec) === 1) || (c === ec && Math.abs(r - er) === 1);
-    if (!adjacent) return;
-    [board[index], board[empty]] = [board[empty], board[index]];
-    won = isSolved(board);
-    render();
-  };
-
-  const restart = () => {
-    board = shuffleBoard();
-    won = false;
-    render();
-  };
-
-  /** Auto-solver **/
-  const getMovableTiles = () => {
-    const empty = board.indexOf(EMPTY);
-    const er = Math.floor(empty / SIZE);
-    const ec = empty % SIZE;
-    const movable = [];
-
-    // Check all board positions
-    for (let i = 0; i < board.length; i++) {
-      if (i === empty) continue;
-
-      const r = Math.floor(i / SIZE);
-      const c = i % SIZE;
-
-      // Check if adjacent to empty space
-      const adjacent = (r === er && Math.abs(c - ec) === 1) || 
-                       (c === ec && Math.abs(r - er) === 1);
-
-      if (adjacent) {
-        movable.push(i);
+      updateVisual(t){
+        const progress = Math.min(1,(t-this.timestamp)/fadeDuration);
+        this.opacity = this.fromOpacity + (this.toOpacity-this.fromOpacity)*progress;
       }
     }
 
-    return movable;
-  };
+    // Создаём или пересоздаём поле под размер окна -----------------------
+    const buildGrid = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      cols = Math.floor(canvas.width  / cellSize);
+      rows = Math.floor(canvas.height / cellSize);
+      if(cols < 1 || rows < 1) return; // слишком маленькое окно
+      cells = Array.from({length:rows}, () =>
+              Array.from({length:cols}, () => new Cell())
+      );
+    };
+    buildGrid();
+    window.addEventListener('resize', buildGrid);
 
-  // Calculate Manhattan distance (how far each tile is from its goal position)
-  const calculateManhattanDistance = (b) => {
-    let distance = 0;
-    for (let i = 0; i < b.length; i++) {
-      if (b[i] === EMPTY) continue;
+    // Игровая логика ------------------------------------------------------
+    const idxRow = i => (i + rows) % rows;
+    const idxCol = i => (i + cols) % cols;
 
-      // Current position
-      const currentRow = Math.floor(i / SIZE);
-      const currentCol = i % SIZE;
-
-      // Goal position
-      const goalIndex = SOLVED.indexOf(b[i]);
-      const goalRow = Math.floor(goalIndex / SIZE);
-      const goalCol = goalIndex % SIZE;
-
-      // Add Manhattan distance for this tile
-      distance += Math.abs(currentRow - goalRow) + Math.abs(currentCol - goalCol);
-    }
-    return distance;
-  };
-
-  // Evaluate which move is best (returns the board with lowest Manhattan distance)
-  const evaluateMoves = (movableTiles) => {
-    let bestScore = Infinity;
-    let bestTileIndex = -1;
-
-    for (const tileIndex of movableTiles) {
-      // Create a copy of the board
-      const tempBoard = [...board];
-      const emptyIndex = tempBoard.indexOf(EMPTY);
-
-      // Simulate the move
-      [tempBoard[tileIndex], tempBoard[emptyIndex]] = [tempBoard[emptyIndex], tempBoard[tileIndex]];
-
-      // Calculate score (lower is better)
-      const score = calculateManhattanDistance(tempBoard);
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestTileIndex = tileIndex;
-      }
-    }
-
-    return bestTileIndex;
-  };
-
-  const solvePuzzle = () => {
-    if (won || solving) return;
-
-    solving = true;
-    msgEl.textContent = "Solving...";
-    stopBtn.style.display = "inline-block";
-    solveBtn.style.display = "none";
-
-    // Keep track of previous states to detect loops
-    const previousStates = [];
-    let randomMoveCounter = 0;
-
-    const makeMove = () => {
-      if (!solving || won) {
-        solving = false;
-        return;
-      }
-
-      const movable = getMovableTiles();
-      if (movable.length === 0) {
-        solving = false;
-        return;
-      }
-
-      // Create a string representation of current board state
-      const currentState = board.join(',');
-
-      // Check if we're in a loop (same state appears multiple times)
-      const stateCount = previousStates.filter(state => state === currentState).length;
-      previousStates.push(currentState);
-
-      // Keep the history limited to prevent memory issues
-      if (previousStates.length > 20) {
-        previousStates.shift();
-      }
-
-      let tileIndex;
-
-      // If we detect a potential loop or every 10 moves, make a random move to break out
-      if (stateCount > 2 || randomMoveCounter >= 10) {
-        tileIndex = movable[Math.floor(Math.random() * movable.length)];
-        randomMoveCounter = 0;
-      } else {
-        // Choose the best tile to move
-        tileIndex = evaluateMoves(movable);
-        randomMoveCounter++;
-      }
-
-      moveTile(tileIndex);
-
-      // If puzzle is solved, stop
-      if (won) {
-        solving = false;
-        return;
-      }
-
-      // Clear any existing timer
-      if (autoMoveTimer) {
-        clearTimeout(autoMoveTimer);
-        autoMoveTimer = null;
-      }
-
-      // Wait 2 second before next move
-      autoMoveTimer = setTimeout(() => {
-        // If user clicked a tile, skip this move but reset the flag
-        // and set a timer to resume automatic moves after 2 seconds
-        if (userClicked) {
-          userClicked = false;
-          // Resume automatic moves after a delay if the user stops clicking
-          autoMoveTimer = setTimeout(() => {
-            if (solving && !won) {
-              makeMove();
-            }
-          }, 4000);
-        } else {
-          makeMove();
-        }
-      }, 2000);
+    const neighbours = (r,c) => {
+      let n = 0;
+      for(let dr=-1; dr<=1; dr++)
+        for(let dc=-1; dc<=1; dc++)
+          if(dr||dc) if(cells[idxRow(r+dr)][idxCol(c+dc)].live) n++;
+      return n;
     };
 
-    // Start making moves
-    makeMove();
-  };
+    const step = () => {
+      if(!cells) return;
+      let alive = 0;
+      for(let r=0; r<rows; r++){
+        for(let c=0; c<cols; c++){
+          const cell = cells[r][c];
+          const n = neighbours(r,c);
+          cell.next = (cell.live && (n===2||n===3)) || (!cell.live && n===3);
+          if(cell.next) alive++;
+        }
+      }
+      for(let r=0; r<rows; r++){
+        for(let c=0; c<cols; c++){
+          const cell = cells[r][c];
+          if(cell.next !== cell.live){
+            cell.live = cell.next;
+            cell.startFade(cell.live);
+          }
+        }
+      }
+      if(alive === 0){ // всё вымерло — новое случайное поле
+        for(let r=0; r<rows; r++){
+          for(let c=0; c<cols; c++){
+            const cell = cells[r][c];
+            const live = Math.random() < 0.15;
+            cell.live  = live;
+            cell.color = live ? pastel() : null;
+            cell.startFade(live);
+          }
+        }
+      }
+    };
 
-  const stopSolving = () => {
-    solving = false;
-    msgEl.textContent = "";
-    stopBtn.style.display = "none";
-    solveBtn.style.display = "inline-block";
+    // Отрисовка -----------------------------------------------------------
+    const draw = t => {
+      if(!cells) return requestAnimationFrame(draw);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(let r=0; r<rows; r++){
+        for(let c=0; c<cols; c++){
+          const cell = cells[r][c];
+          cell.updateVisual(t);
+          if(cell.opacity > 0.01){
+            ctx.globalAlpha = cell.opacity;
+            ctx.fillStyle   = cell.color;
+            const x = c*cellSize + cellSize/2;
+            const y = r*cellSize + cellSize/2;
+            ctx.beginPath();
+            ctx.arc(x, y, cellSize*0.45, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    };
 
-    // Clear any existing timer
-    if (autoMoveTimer) {
-      clearTimeout(autoMoveTimer);
-      autoMoveTimer = null;
-    }
-  };
-
-  restartBtn.addEventListener("click", () => {
-    stopSolving();
-    restart();
-  });
-
-  solveBtn.addEventListener("click", solvePuzzle);
-  stopBtn.addEventListener("click", stopSolving);
-
-  /* Init */
-  restart();
-  // Auto-start solving when page loads
-  setTimeout(solvePuzzle, 1000);
+    // Запуск циклов -------------------------------------------------------
+    setInterval(step, genInterval);
+    requestAnimationFrame(draw);
+  })();
 </script>
 </body>
 </html>
