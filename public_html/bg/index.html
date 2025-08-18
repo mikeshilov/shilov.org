@@ -90,6 +90,21 @@
             box-shadow: 0 0 0 3px rgba(43,125,233,.5) inset;
         }
 
+        /* Бар (центральная область для битых шашек) */
+        .bar {
+            position: absolute; left: 50%; top: 0; bottom: 0; width: 40px;
+            transform: translateX(-50%); z-index: 3;
+            background: linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.2) 40%, rgba(0,0,0,.2) 60%, rgba(0,0,0,.1));
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+        }
+        .bar .stack {
+            position: relative; width: 100%; height: 80%; overflow: visible;
+        }
+        .bar.hover {
+            background: linear-gradient(180deg, rgba(43,125,233,.2), rgba(43,125,233,.4) 40%, rgba(43,125,233,.4) 60%, rgba(43,125,233,.2));
+            box-shadow: 0 0 0 2px rgba(43,125,233,.6) inset;
+        }
+
         /* Контейнеры для шашек на каждом пункте */
         .stack { position: absolute; inset: 6px; }
 
@@ -120,6 +135,9 @@
     <div id="board" class="board">
         <div class="points">
             <div class="row top" id="rowTop"></div>
+            <div id="bar" class="bar" data-point="-1">
+                <div class="stack"></div>
+            </div>
             <div class="row bottom" id="rowBottom"></div>
         </div>
         <div class="drag-layer" id="dragLayer"></div>
@@ -141,8 +159,9 @@
     // Карта DOM-элементов точек по номеру пункта (1..24)
     const pointEls = new Map();
 
-    // Состояние: массив из 25 (индексы 1..24), в каждом — массив шашек {id, color}
-    let state = Array.from({length: 25}, () => []);
+    // Состояние: массив из 26 (индексы -1, 1..24), в каждом — массив шашек {id, color}
+    let state = Array.from({length: 26}, () => []);
+    state[-1] = []; // бар имеет индекс -1
     let idSeq = 1;
 
     // Создаём 12 верхних и 12 нижних пунктов
@@ -192,7 +211,8 @@
 
     // ======= ИНИЦИАЛЬНАЯ РАССТАНОВКА (короткие нарды / backgammon) =======
     function setupInitial() {
-        state = Array.from({length: 25}, () => []);
+        state = Array.from({length: 26}, () => []);
+        state[-1] = []; // бар имеет индекс -1
         addPieces(24, 'white', 2);
         addPieces(13, 'white', 5);
         addPieces(8,  'white', 3);
@@ -253,7 +273,49 @@
         }
     }
 
+    function renderBar() {
+        const bar = $('#bar');
+        if (!bar) return;
+        const stack = bar.querySelector('.stack');
+        stack.innerHTML = '';
+
+        const pieces = state[-1]; // бар имеет индекс -1
+        const count = pieces.length;
+
+        for (let i = 0; i < count; i++) {
+            const piece = pieces[i];
+            const el = document.createElement('div');
+            el.className = `checker ${piece.color}`;
+            el.dataset.id = piece.id;
+
+            // Расположение шашек на баре в столбик
+            const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--checker-size')) || 40;
+            const maxStep = size * 0.9;
+            let step = maxStep;
+            const barHeight = bar.getBoundingClientRect().height;
+            const availableHeight = barHeight * 0.8;
+            
+            if (count > 1) {
+                step = Math.min(maxStep, Math.max(size * 0.5, (availableHeight - size) / (count - 1)));
+            }
+            
+            // Вычисляем общую высоту стека и центрируем его
+            const totalStackHeight = count === 1 ? size : (count - 1) * step + size;
+            const startY = (barHeight - totalStackHeight) / 2;
+            
+            el.style.position = 'absolute';
+            el.style.left = '50%';
+            el.style.top = (startY + i * step) + 'px';
+            el.style.transform = 'translateX(-50%)';
+            
+            // Навешиваем обработчик для перетаскивания
+            el.addEventListener('pointerdown', onPiecePointerDown);
+            stack.appendChild(el);
+        }
+    }
+
     function renderAll() {
+        renderBar();
         for (let p = 1; p <= 24; p++) renderPoint(p);
     }
 
@@ -305,8 +367,14 @@
         // Находим пункт под курсором
         const hoverPoint = getPointUnderCursor(e.clientX, e.clientY);
         if (hoverPoint !== drag.lastHoverPoint) {
-            if (drag.lastHoverPoint) pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
-            if (hoverPoint) pointEls.get(hoverPoint)?.classList.add('hover');
+            if (drag.lastHoverPoint !== null) {
+                if (drag.lastHoverPoint === -1) $('#bar')?.classList.remove('hover');
+                else pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
+            }
+            if (hoverPoint !== null) {
+                if (hoverPoint === -1) $('#bar')?.classList.add('hover');
+                else pointEls.get(hoverPoint)?.classList.add('hover');
+            }
             drag.lastHoverPoint = hoverPoint;
         }
     }
@@ -314,7 +382,10 @@
     function onPointerUp(e) {
         if (!drag) return;
         const targetPoint = getPointUnderCursor(e.clientX, e.clientY);
-        if (drag.lastHoverPoint) pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
+        if (drag.lastHoverPoint !== null) {
+            if (drag.lastHoverPoint === -1) $('#bar')?.classList.remove('hover');
+            else pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
+        }
 
         if (targetPoint) {
             movePiece(drag.id, drag.fromPoint, targetPoint);
@@ -338,28 +409,41 @@
         const el = document.elementFromPoint(clientX, clientY);
         if (drag && drag.ghost) drag.ghost.style.display = toRestore;
 
+        // Проверяем сначала бар, затем обычные точки
+        const barEl = el?.closest('.bar');
+        if (barEl && boardEl.contains(barEl)) {
+            return -1; // бар имеет индекс -1
+        }
+
         const pointEl = el?.closest('.point');
         if (!pointEl || !boardEl.contains(pointEl)) return null;
         return +pointEl.dataset.point;
     }
 
     function findPointByPieceId(id) {
-        for (let p = 1; p <= 24; p++) {
-            if (state[p].some(pc => pc.id === id)) return p;
+        for (let p = -1; p <= 24; p++) {
+            if (p === 0) continue; // пропускаем индекс 0, так как бар теперь -1
+            if (state[p] && state[p].some(pc => pc.id === id)) return p;
         }
         return null;
     }
 
     function movePiece(id, fromPoint, toPoint) {
-        if (fromPoint === toPoint) { renderPoint(fromPoint); return; }
+        if (fromPoint === toPoint) { 
+            if (fromPoint === -1) renderBar(); 
+            else renderPoint(fromPoint); 
+            return; 
+        }
         const fromArr = state[fromPoint];
         const idx = fromArr.findIndex(pc => pc.id === id);
         if (idx === -1) { renderAll(); return; }
         const piece = fromArr.splice(idx, 1)[0];
         state[toPoint].push(piece);
         // Перерисуем только два пункта для быстроты
-        renderPoint(fromPoint);
-        renderPoint(toPoint);
+        if (fromPoint === -1) renderBar(); 
+        else renderPoint(fromPoint);
+        if (toPoint === -1) renderBar(); 
+        else renderPoint(toPoint);
     }
 
     // ======= КНОПКА СБРОСА =======
