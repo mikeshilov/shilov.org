@@ -48,7 +48,7 @@
             padding: clamp(8px, 1.2vw, 16px);
         }
 
-        /* Внутренняя область с точками */
+        /* Внутренняя область с пунктами */
         .points {
             position: absolute; inset: clamp(8px, 1.2vw, 16px);
             display: grid; grid-template-rows: 1fr 1fr; gap: clamp(8px, 1.2vw, 16px);
@@ -71,18 +71,18 @@
         /* Треугольники точек */
         .point::before {
             content: ""; position: absolute; left: 50%; transform: translateX(-50%);
-            border-left: 50% solid transparent; border-right: 50% solid transparent;
-            z-index: 0;
+            border-left: 25px solid transparent; border-right: 25px solid transparent;
+            z-index: 0; width: 0; height: 0;
         }
         .point.top::before {
-            top: 0; border-top: none; border-bottom: 95% solid var(--point-a);
+            top: 0; border-bottom: none; border-top: 200px solid var(--point-a);
         }
         .point.bottom::before {
-            bottom: 0; border-bottom: none; border-top: 95% solid var(--point-a);
+            bottom: 0; border-top: none; border-bottom: 200px solid var(--point-a);
         }
         /* Чередование цветов */
-        .point.alt.top::before { border-bottom-color: var(--point-b); }
-        .point.alt.bottom::before { border-top-color: var(--point-b); }
+        .point.alt.top::before { border-top-color: var(--point-b); }
+        .point.alt.bottom::before { border-bottom-color: var(--point-b); }
 
         /* Подсветка потенциального дропа */
         .point.hover::after {
@@ -90,7 +90,7 @@
             box-shadow: 0 0 0 3px rgba(43,125,233,.5) inset;
         }
 
-        /* Контейнеры для шашек на каждой точке */
+        /* Контейнеры для шашек на каждом пункте */
         .stack { position: absolute; inset: 6px; }
 
         .checker {
