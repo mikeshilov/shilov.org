@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Короткие нарды — интерактивная доска</title>
+    <style>
+        :root {
+            --board-bg-a: #caa574; /* wood */
+            --board-bg-b: #b98d5a; /* darker wood */
+            --point-a: #6b3e2e;
+            --point-b: #f0d9b5;
+            --divider: rgba(0,0,0,.25);
+            --checker-white: #f7f7f7;
+            --checker-black: #222;
+            --checker-edge: rgba(0,0,0,.45);
+            --checker-size: 40px; /* will be adjusted by JS for responsiveness */
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Noto Sans', Arial, sans-serif;
+            background: #eee;
+            color: #222;
+            display: grid;
+            place-items: start center;
+            padding: 20px;
+        }
+
+        .wrap { width: min(1100px, 96vw); }
+        h1 { font-size: clamp(18px, 3.4vw, 28px); margin: 0 0 12px; }
+        .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        button {
+            padding: 10px 14px; border: 0; border-radius: 12px; cursor: pointer; font-weight: 600;
+            background: #2b7de9; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+        }
+        button:active { transform: translateY(1px); }
+
+        .board {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2 / 1; /* классические пропорции доски */
+            border-radius: 18px;
+            box-shadow: 0 10px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.15);
+            background: linear-gradient(135deg, var(--board-bg-a), var(--board-bg-b));
+            overflow: hidden;
+            padding: clamp(8px, 1.2vw, 16px);
+        }
+
+        /* Внутренняя область с точками */
+        .points {
+            position: absolute; inset: clamp(8px, 1.2vw, 16px);
+            display: grid; grid-template-rows: 1fr 1fr; gap: clamp(8px, 1.2vw, 16px);
+        }
+        .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0; position: relative; }
+
+        /* Центральная перегородка (бар) */
+        .row::after {
+            content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 100%;
+            transform: translateX(-1px);
+            background: linear-gradient(180deg, transparent, var(--divider) 40%, var(--divider) 60%, transparent);
+            box-shadow: 0 0 0 1px rgba(255,255,255,.2);
+        }
+
+        .point {
+            position: relative; isolation: isolate; /* чтобы треугольники перекрывали фон красиво */
+            height: 100%;
+        }
+
+        /* Треугольники точек */
+        .point::before {
+            content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+            border-left: 50% solid transparent; border-right: 50% solid transparent;
+            z-index: 0;
+        }
+        .point.top::before {
+            top: 0; border-top: none; border-bottom: 95% solid var(--point-a);
+        }
+        .point.bottom::before {
+            bottom: 0; border-bottom: none; border-top: 95% solid var(--point-a);
+        }
+        /* Чередование цветов */
+        .point.alt.top::before { border-bottom-color: var(--point-b); }
+        .point.alt.bottom::before { border-top-color: var(--point-b); }
+
+        /* Подсветка потенциального дропа */
+        .point.hover::after {
+            content: ""; position: absolute; inset: 6px; border-radius: 10px; z-index: 1;
+            box-shadow: 0 0 0 3px rgba(43,125,233,.5) inset;
+        }
+
+        /* Контейнеры для шашек на каждой точке */
+        .stack { position: absolute; inset: 6px; }
+
+        .checker {
+            position: absolute; width: var(--checker-size); height: var(--checker-size);
+            border-radius: 50%; box-shadow: inset 0 2px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.2), 0 3px 8px rgba(0,0,0,.25);
+            border: 1px solid var(--checker-edge);
+            left: 50%; transform: translateX(-50%);
+            touch-action: none; cursor: grab; user-select: none; z-index: 2;
+            display: grid; place-items: center; font-weight: 700; font-size: 12px; color: rgba(0,0,0,.5);
+        }
+        .checker.white { background: radial-gradient(circle at 30% 30%, #fff, var(--checker-white)); }
+        .checker.black { background: radial-gradient(circle at 30% 30%, #444, var(--checker-black)); color: rgba(255,255,255,.7); }
+        .checker.dragging { cursor: grabbing; box-shadow: 0 10px 24px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.25); }
+
+        /* Слой для перетаскивания, чтобы фигура была над всем */
+        .drag-layer { position: absolute; inset: 0; pointer-events: none; }
+
+        .legend { opacity: .7; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Короткие нарды — интерактивная доска</h1>
+    <div class="controls">
+        <button id="resetBtn">Сбросить расстановку</button>
+    </div>
+    <div id="board" class="board">
+        <div class="points">
+            <div class="row top" id="rowTop"></div>
+            <div class="row bottom" id="rowBottom"></div>
+        </div>
+        <div class="drag-layer" id="dragLayer"></div>
+    </div>
+    <div class="legend">Перетаскивайте шашки мышкой на любые пункты. Правила не ограничены — цель этой страницы — визуальная доска с ручным перемещением. Начальная расстановка соответствует коротким нардам.</div>
+</div>
+
+<script>
+    // ======= УТИЛИТЫ =======
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    const boardEl = $('#board');
+    const rowTop = $('#rowTop');
+    const rowBottom = $('#rowBottom');
+    const dragLayer = $('#dragLayer');
+    const resetBtn = $('#resetBtn');
+
+    // Карта DOM-элементов точек по номеру пункта (1..24)
+    const pointEls = new Map();
+
+    // Состояние: массив из 25 (индексы 1..24), в каждом — массив шашек {id, color}
+    let state = Array.from({length: 25}, () => []);
+    let idSeq = 1;
+
+    // Создаём 12 верхних и 12 нижних пунктов
+    function buildPoints() {
+        rowTop.innerHTML = '';
+        rowBottom.innerHTML = '';
+        pointEls.clear();
+
+        // Верхний ряд: слева направо 13..24, треугольники вниз
+        for (let col = 0; col < 12; col++) {
+            const num = 13 + col; // 13..24
+            const el = createPointEl(num, 'top', col);
+            rowTop.appendChild(el);
+        }
+        // Нижний ряд: слева направо 12..1, треугольники вверх
+        for (let col = 0; col < 12; col++) {
+            const num = 12 - col; // 12..1
+            const el = createPointEl(num, 'bottom', col);
+            rowBottom.appendChild(el);
+        }
+        adjustCheckerSize();
+    }
+
+    function createPointEl(pointNum, side, colIndex) {
+        const point = document.createElement('div');
+        point.className = `point ${side} ${colIndex % 2 ? 'alt' : ''}`;
+        point.dataset.point = String(pointNum);
+        const stack = document.createElement('div');
+        stack.className = 'stack';
+        point.appendChild(stack);
+        pointEls.set(pointNum, point);
+        return point;
+    }
+
+    // Адаптивный размер шашек на основе ширины доски
+    function adjustCheckerSize() {
+        const w = boardEl.getBoundingClientRect().width;
+        // 26 "ячейк" по ширине (12 пунктов + промежутки/отступы). Выберем разумный предел
+        const size = Math.max(26, Math.min(48, Math.round(w / 26)));
+        document.documentElement.style.setProperty('--checker-size', size + 'px');
+    }
+
+    window.addEventListener('resize', () => {
+        adjustCheckerSize();
+        renderAll();
+    });
+
+    // ======= ИНИЦИАЛЬНАЯ РАССТАНОВКА (короткие нарды / backgammon) =======
+    function setupInitial() {
+        state = Array.from({length: 25}, () => []);
+        addPieces(24, 'white', 2);
+        addPieces(13, 'white', 5);
+        addPieces(8,  'white', 3);
+        addPieces(6,  'white', 5);
+
+        addPieces(1,  'black', 2);
+        addPieces(12, 'black', 5);
+        addPieces(17, 'black', 3);
+        addPieces(19, 'black', 5);
+        renderAll();
+    }
+
+    function addPieces(point, color, count) {
+        for (let i = 0; i < count; i++) {
+            state[point].push({ id: idSeq++, color });
+        }
+    }
+
+    // ======= РЕНДЕР =======
+    function renderPoint(pointNum) {
+        const point = pointEls.get(pointNum);
+        if (!point) return;
+        const stack = point.querySelector('.stack');
+        stack.innerHTML = '';
+
+        const isTop = point.classList.contains('top');
+        const rect = point.getBoundingClientRect();
+        const inset = 6; // отступы контейнера
+        const usableHeight = rect.height - inset * 2;
+        const pieces = state[pointNum];
+        const count = pieces.length;
+
+        for (let i = 0; i < count; i++) {
+            const piece = pieces[i];
+            const el = document.createElement('div');
+            el.className = `checker ${piece.color}`;
+            el.dataset.id = piece.id;
+            el.style.width = `var(--checker-size)`;
+            el.style.height = `var(--checker-size)`;
+
+            // Раскладка: шаг между шашками, не даём им вылезти за пределы
+            const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--checker-size')) || 40;
+            const maxStep = size * 0.88; // чуть перекрываются
+            let step = maxStep;
+            if (count > 1) {
+                step = Math.min(maxStep, (usableHeight - size) / (count - 1));
+            }
+            const offset = Math.max(0, Math.min(usableHeight - size, i * step));
+            if (isTop) {
+                el.style.top = (inset + offset) + 'px';
+            } else {
+                el.style.bottom = (inset + offset) + 'px';
+            }
+
+            // Навешиваем обработчик для перетаскивания
+            el.addEventListener('pointerdown', onPiecePointerDown);
+            stack.appendChild(el);
+        }
+    }
+
+    function renderAll() {
+        for (let p = 1; p <= 24; p++) renderPoint(p);
+    }
+
+    // ======= ПЕРЕТАСКИВАНИЕ =======
+    let drag = null; // {id, color, fromPoint, el, ghost, dx, dy, lastHoverPoint}
+
+    function onPiecePointerDown(e) {
+        if (e.button !== 0) return; // только ЛКМ
+        const el = e.currentTarget;
+        const id = +el.dataset.id;
+        const fromPoint = findPointByPieceId(id);
+        if (!fromPoint) return;
+
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+
+        // Создаём "призрак" на верхнем слое
+        const ghost = el.cloneNode(true);
+        ghost.classList.add('dragging');
+        ghost.style.pointerEvents = 'none';
+        dragLayer.appendChild(ghost);
+
+        // Вычисляем стартовые координаты
+        const br = boardEl.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        const dx = e.clientX - r.left; // смещение курсора внутри круга
+        const dy = e.clientY - r.top;
+
+        positionGhost(ghost, e.clientX - br.left - dx, e.clientY - br.top - dy);
+
+        drag = { id, fromPoint, el, ghost, dx, dy, lastHoverPoint: null };
+
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp, { once: true });
+    }
+
+    function positionGhost(ghost, x, y) {
+        ghost.style.position = 'absolute';
+        ghost.style.left = x + 'px';
+        ghost.style.top = y + 'px';
+        ghost.style.transform = 'none'; // уже абсолютные координаты
+    }
+
+    function onPointerMove(e) {
+        if (!drag) return;
+        const br = boardEl.getBoundingClientRect();
+        positionGhost(drag.ghost, e.clientX - br.left - drag.dx, e.clientY - br.top - drag.dy);
+
+        // Находим пункт под курсором
+        const hoverPoint = getPointUnderCursor(e.clientX, e.clientY);
+        if (hoverPoint !== drag.lastHoverPoint) {
+            if (drag.lastHoverPoint) pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
+            if (hoverPoint) pointEls.get(hoverPoint)?.classList.add('hover');
+            drag.lastHoverPoint = hoverPoint;
+        }
+    }
+
+    function onPointerUp(e) {
+        if (!drag) return;
+        const targetPoint = getPointUnderCursor(e.clientX, e.clientY);
+        if (drag.lastHoverPoint) pointEls.get(drag.lastHoverPoint)?.classList.remove('hover');
+
+        if (targetPoint) {
+            movePiece(drag.id, drag.fromPoint, targetPoint);
+        } else {
+            // Возврат на место — просто перерендерим исходный и возможно целевой пункты
+            renderPoint(drag.fromPoint);
+        }
+
+        dragLayer.innerHTML = '';
+        document.removeEventListener('pointermove', onPointerMove);
+        drag = null;
+    }
+
+    function getPointUnderCursor(clientX, clientY) {
+        // На время скрываем призрак, чтобы получить элемент под ним
+        let toRestore = null;
+        if (drag && drag.ghost) {
+            toRestore = drag.ghost.style.display;
+            drag.ghost.style.display = 'none';
+        }
+        const el = document.elementFromPoint(clientX, clientY);
+        if (drag && drag.ghost) drag.ghost.style.display = toRestore;
+
+        const pointEl = el?.closest('.point');
+        if (!pointEl || !boardEl.contains(pointEl)) return null;
+        return +pointEl.dataset.point;
+    }
+
+    function findPointByPieceId(id) {
+        for (let p = 1; p <= 24; p++) {
+            if (state[p].some(pc => pc.id === id)) return p;
+        }
+        return null;
+    }
+
+    function movePiece(id, fromPoint, toPoint) {
+        if (fromPoint === toPoint) { renderPoint(fromPoint); return; }
+        const fromArr = state[fromPoint];
+        const idx = fromArr.findIndex(pc => pc.id === id);
+        if (idx === -1) { renderAll(); return; }
+        const piece = fromArr.splice(idx, 1)[0];
+        state[toPoint].push(piece);
+        // Перерисуем только два пункта для быстроты
+        renderPoint(fromPoint);
+        renderPoint(toPoint);
+    }
+
+    // ======= КНОПКА СБРОСА =======
+    resetBtn.addEventListener('click', () => {
+        setupInitial();
+    });
+
+    // ======= ПУСК =======
+    buildPoints();
+    setupInitial();
+</script>
+</body>
+</html>

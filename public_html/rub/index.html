@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RUB → AMD конвертер</title>
+  <style>
+    :root {
+      --bg: #f9f9fb;
+      --primary: #0066ff;
+      --border: #ddd;
+      --text: #333;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    label {
+      font-size: 0.95rem;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    input {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: var(--primary);
+    }
+    button {
+      font-size: 1rem;
+      padding: 0.6rem 1.2rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0050cc;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    #result {
+      margin-top: 0.8rem;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Конвертер рублей → драм</h1>
+
+  <label for="rub">Сумма в рублях:</label>
+  <input id="rub" type="number" min="0" step="0.01" placeholder="например 1000">
+  <button id="convert">Конвертировать</button>
+
+  <div id="status"></div>
+  <div id="result"></div>
+</div>
+
+<script type="module">
+  async function fetchMedianRurBuyRate() {
+    const src = 'https://www.rate.am/ru/armenian-dram-exchange-rates/exchange-points';
+    const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(src);
+
+    const html = await fetch(proxy).then(r => {
+      if (!r.ok) throw new Error('Не удалось получить данные с rate.am');
+      return r.text();
+    });
+
+    const re = /<td[^>]*>\s*RUR\s*<\/td>\s*<td[^>]*>([\d.]+)<\/td>/gi;
+    const rates = [...html.matchAll(re)].map(m => +m[1]);
+
+    if (!rates.length) throw new Error('Курсы RUR не найдены');
+
+    rates.sort((a, b) => a - b);
+    const mid = rates.length >> 1;
+    const median = (rates.length & 1)
+            ? rates[mid]
+            : (rates[mid - 1] + rates[mid]) / 2;
+
+    return +median.toFixed(2);
+  }
+
+  let cachedRate = null;
+
+  document.getElementById('convert').addEventListener('click', async () => {
+    const status = document.getElementById('status');
+    const result = document.getElementById('result');
+    status.textContent = 'Получаем курс...';
+    result.textContent = '';
+
+    try {
+      if (cachedRate === null) cachedRate = await fetchMedianRurBuyRate();
+      status.textContent = `Курс покупки RUR: ${cachedRate} AMD за 1 RUB`;
+
+      const rubInput = document.getElementById('rub').value.trim().replace(',', '.');
+      const rub = parseFloat(rubInput);
+      if (isNaN(rub)) {
+        result.textContent = 'Введите корректную числовую сумму.';
+        return;
+      }
+      const amd = (rub * cachedRate).toFixed(2);
+      result.textContent = `${rub} ₽ = ${amd} ֏`;
+    } catch (err) {
+      status.textContent = 'Ошибка: ' + err.message;
+    }
+  });
+</script>
+</body>
+</html>
