@@ -1,25 +1,21 @@
 // Authentication functionality for Color Calendar
-// Uses the appwriteBackend instance from backend.js
+// Uses the shilovBackend instance from backend.js
 
 // Authentication functions
-async function loginUser(email, password) {
-    const result = await window.appwriteBackend.login(email, password);
+async function loginUser(email, otp) {
+    const result = await window.shilovBackend.login(email, otp);
     if (result.success) {
         window.currentUser = result.user;
     }
     return result;
 }
 
-async function signupUser(email, password) {
-    const result = await window.appwriteBackend.signup(email, password);
-    if (result.success) {
-        window.currentUser = result.user;
-    }
-    return result;
+async function signupUser(email) {
+    return window.shilovBackend.signup(email);
 }
 
 async function logoutUser() {
-    const result = await window.appwriteBackend.logout();
+    const result = await window.shilovBackend.logout();
     if (result.success) {
         window.currentUser = null;
     }
@@ -27,7 +23,7 @@ async function logoutUser() {
 }
 
 async function checkSession() {
-    const result = await window.appwriteBackend.checkSession();
+    const result = await window.shilovBackend.checkSession();
     if (result.success) {
         window.currentUser = result.user;
     }
@@ -35,21 +31,35 @@ async function checkSession() {
 }
 
 // UI functions
+function syncEmailFields(sourceId, targetId) {
+    const source = document.getElementById(sourceId);
+    const target = document.getElementById(targetId);
+    const value = source.value.trim();
+    if (value) {
+        target.value = value;
+    }
+}
+
 function showLoginForm() {
+    syncEmailFields('signup-email', 'login-email');
     document.getElementById('signup-form').style.display = 'none';
     document.getElementById('login-form').style.display = 'block';
+    document.getElementById('signup-error').textContent = '';
 }
 
 function showSignupForm() {
+    syncEmailFields('login-email', 'signup-email');
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('signup-form').style.display = 'block';
+    document.getElementById('login-error').textContent = '';
 }
 
 function updateUIForLoggedInUser() {
     document.getElementById('auth-forms').classList.remove('active');
     document.getElementById('auth-buttons').style.display = 'none';
     document.getElementById('user-info').style.display = 'flex';
-    document.getElementById('user-email').textContent = window.currentUser.email;
+    document.getElementById('user-email').textContent =
+        window.currentUser?.email || window.currentUser?.user_email || window.currentUser?.name || 'Logged in';
     // Note: createCalendars() will be called after colors are loaded
 }
 
@@ -104,29 +114,47 @@ function downloadColorData() {
     }
 }
 
+function getShilovBackendEndpoint() {
+    if (typeof window.SHILOV_API_URL === 'string' && window.SHILOV_API_URL.trim()) {
+        return window.SHILOV_API_URL.trim().replace(/\/+$/, '');
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost';
+    }
+    return 'https://api.shilov.org';
+}
+
 // Initialize authentication
 function initializeAuth() {
     try {
-        // Initialize Appwrite backend
-        window.appwriteBackend.initialize('https://fra.cloud.appwrite.io/v1', '68230f820010c85a6246');
+        // Initialize Shilov backend
+        window.shilovBackend.initialize(getShilovBackendEndpoint(), 'cal');
 
         // For backward compatibility
-        window.appwriteClient = window.appwriteBackend.client;
-        window.databases = window.appwriteBackend.databases;
-        window.query = window.appwriteBackend.query;
-        window.account = window.appwriteBackend.account;
+        window.appwriteClient = window.shilovBackend.client;
+        window.databases = window.shilovBackend.databases;
+        window.query = window.shilovBackend.query;
+        window.account = window.shilovBackend.account;
 
         // Set up event listeners for auth forms
+        document.getElementById('login-email').addEventListener('input', function(e) {
+            document.getElementById('signup-email').value = e.target.value;
+        });
+        document.getElementById('signup-email').addEventListener('input', function(e) {
+            document.getElementById('login-email').value = e.target.value;
+        });
+
         document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+            const otp = document.getElementById('login-otp').value.trim();
+            document.getElementById('login-error').textContent = '';
 
-            const result = await loginUser(email, password);
+            const result = await loginUser(email, otp);
             if (result.success) {
                 updateUIForLoggedInUser();
                 // Load colors after login
-                await window.loadColorsFromAppwrite();
+                await window.loadColorsFromBackend();
                 window.createColorLegend(); // Create color legend
                 window.createCalendars(); // Create calendars after colors are loaded
             } else {
@@ -137,22 +165,16 @@ function initializeAuth() {
         document.getElementById('signup-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
+            document.getElementById('signup-error').textContent = '';
 
-            const result = await signupUser(email, password);
-            if (result.success) {
-                updateUIForLoggedInUser();
-                // Load colors after signup
-                try {
-                    await window.loadColorsFromAppwrite();
-                    window.createColorLegend(); // Create color legend
-                    window.createCalendars(); // Create calendars after colors are loaded
-                } catch (error) {
-                    console.warn('Could not load colors from Appwrite', error);
-                    // Do not create calendars if colors couldn't be loaded
-                }
+            const result = await signupUser(email);
+            if (result.success && result.otpSent) {
+                showLoginForm();
+                document.getElementById('auth-forms').classList.add('active');
+                document.getElementById('login-email').value = email;
+                document.getElementById('login-error').textContent = 'OTP sent to your email. Enter it below to sign in.';
             } else {
-                document.getElementById('signup-error').textContent = result.error || 'Signup failed';
+                document.getElementById('signup-error').textContent = result.error || 'Could not send OTP';
             }
         });
 
@@ -171,11 +193,13 @@ function initializeAuth() {
         document.getElementById('nav-login-btn').addEventListener('click', function() {
             showLoginForm();
             document.getElementById('auth-forms').classList.add('active');
+            document.getElementById('login-email').focus();
         });
 
         document.getElementById('nav-signup-btn').addEventListener('click', function() {
             showSignupForm();
             document.getElementById('auth-forms').classList.add('active');
+            document.getElementById('signup-email').focus();
         });
 
         // Download button event listener
@@ -194,7 +218,7 @@ function initializeAuth() {
         });
 
     } catch (error) {
-        console.error('Error initializing Appwrite:', error);
+        console.error('Error initializing backend:', error);
     }
 }
 
@@ -204,13 +228,13 @@ async function checkAndSetupSession() {
     if (sessionResult.success) {
         updateUIForLoggedInUser();
 
-        // Try to load colors from Appwrite
+        // Try to load colors from backend
         try {
-            await window.loadColorsFromAppwrite();
+            await window.loadColorsFromBackend();
             window.createColorLegend(); // Create color legend
             window.createCalendars(); // Create calendars after colors are loaded
         } catch (error) {
-            console.warn('Could not load colors from Appwrite', error);
+            console.warn('Could not load colors from backend', error);
             // Do not create calendars if colors couldn't be loaded
         }
     } else {

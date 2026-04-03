@@ -175,15 +175,13 @@ class ShilovBackend {
         this.databases = null;
         this.query = null;
         this.currentUser = null;
-        this.baseUrl = '';
+        this.baseUrl = 'https://api.shilov.org';
         this.token = localStorage.getItem('shilov_session_token') || '';
     }
 
     // Initialize backend endpoint and compatibility shims
     initialize(endpoint, projectId) {
         try {
-            this.baseUrl = (endpoint || '').replace(/\/+$/, '');
-
             // Keep Query-compatible helpers used by the calendar code.
             this.query = {
                 equal: (field, value) => ({ op: 'equal', field, value }),
@@ -278,23 +276,17 @@ class ShilovBackend {
         return payload?.colors || {};
     }
 
-    // Authentication methods
-    // NOTE: current API uses OTP flow; this method tries direct login first and then OTP verify fallback.
-    async login(email, password) {
+    // Authentication methods (OTP-only flow)
+    async login(email, otp) {
         try {
-            let payload = null;
-
-            try {
-                payload = await this._request('/auth/login', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, password })
-                });
-            } catch (_) {
-                payload = await this._request('/user/otp/verify', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, otp: password })
-                });
+            if (!otp) {
+                return { success: false, error: 'OTP code is required' };
             }
+
+            const payload = await this._request('/user/otp/verify', {
+                method: 'POST',
+                body: JSON.stringify({ email, otp })
+            });
 
             const token = this._extractToken(payload);
             if (!token) {
@@ -304,7 +296,7 @@ class ShilovBackend {
             this._setToken(token);
             const me = await this.checkSession();
             if (!me.success) {
-                return { success: false, error: 'Login succeeded but session check failed' };
+                return { success: false, error: 'OTP verified but session check failed' };
             }
             return { success: true, user: this.currentUser };
         } catch (error) {
@@ -313,32 +305,17 @@ class ShilovBackend {
         }
     }
 
-    async signup(email, password) {
+    async signup(email) {
         try {
-            try {
-                const payload = await this._request('/auth/signup', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, password })
-                });
-                const token = this._extractToken(payload);
-                if (token) {
-                    this._setToken(token);
-                }
-                const me = await this.checkSession();
-                if (!me.success) {
-                    return { success: true, user: payload?.user || null };
-                }
-                return { success: true, user: this.currentUser };
-            } catch (_) {
-                await this._request('/user/otp/send', {
-                    method: 'POST',
-                    body: JSON.stringify({ email })
-                });
-                return {
-                    success: false,
-                    error: 'OTP sent. Use the OTP code in the password field to log in.'
-                };
-            }
+            await this._request('/user/otp/send', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            });
+            return {
+                success: true,
+                otpSent: true,
+                message: 'OTP sent to your email'
+            };
         } catch (error) {
             console.error('Signup error:', error);
             return { success: false, error: error.message };
@@ -347,11 +324,7 @@ class ShilovBackend {
 
     async logout() {
         try {
-            try {
-                await this._request('/auth/logout', { method: 'POST' });
-            } catch (_) {
-                await this._request('/user/logout', { method: 'POST' });
-            }
+            await this._request('/user/logout', { method: 'POST' });
             this._setToken('');
             this.currentUser = null;
             return { success: true };
@@ -364,17 +337,12 @@ class ShilovBackend {
     async checkSession() {
         try {
             let payload = null;
-            try {
-                payload = await this._request('/auth/me', { method: 'GET' });
-            } catch (_) {
-                payload = await this._request('/user/me', { method: 'GET' });
-            }
-
-            const user = payload?.user || payload;
-            if (!user) {
+            payload = await this._request('/user/me', { method: 'GET' });
+            const email = payload?.email || payload;
+            if (!email) {
                 return { success: false };
             }
-            this.currentUser = user;
+            this.currentUser = email;
             return { success: true, user: this.currentUser };
         } catch (_) {
             return { success: false };
@@ -498,48 +466,10 @@ class ShilovBackend {
     }
 }
 
-// Migrates all calendar colors from Appwrite to Shilov backend.
-// This function is intentionally "no-merge": it aborts if Shilov already has any data.
-async function migrateAllColorsFromAppwriteToShilov(databaseId, collectionId) {
-    if (!window.appwriteBackend) {
-        throw new Error('Appwrite backend is not available');
-    }
-    if (!window.shilovBackend) {
-        throw new Error('Shilov backend is not available');
-    }
-
-    const shilovDocs = await window.shilovBackend.loadAllDocuments(databaseId, collectionId);
-    if ((shilovDocs || []).length > 0) {
-        throw new Error('Shilov backend already has data. Migration aborted in no-merge mode.');
-    }
-
-    const appwriteDocs = await window.appwriteBackend.loadAllDocuments(databaseId, collectionId);
-    let migrated = 0;
-
-    for (const doc of appwriteDocs || []) {
-        if (!doc || !doc.datestr || typeof doc.color !== 'number') {
-            continue;
-        }
-
-        await window.shilovBackend.createDocument(databaseId, collectionId, 'unique()', {
-            datestr: doc.datestr,
-            color: doc.color
-        });
-        migrated++;
-    }
-
-    return {
-        total: (appwriteDocs || []).length,
-        migrated,
-        skipped: (appwriteDocs || []).length - migrated
-    };
-}
-
 // Create and export a singleton instance
-const backend = new AppwriteBackend();
+const appwriteBackend = new AppwriteBackend();
 const shilovBackend = new ShilovBackend();
 
 // Export the backend instance
-window.appwriteBackend = backend;
+window.appwriteBackend = appwriteBackend;
 window.shilovBackend = shilovBackend;
-window.migrateAllColorsFromAppwriteToShilov = migrateAllColorsFromAppwriteToShilov;

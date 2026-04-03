@@ -6,7 +6,6 @@
     <title>Color Calendar</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.2"></script>
     <script src="backend.js"></script>
 </head>
 <body>
@@ -15,45 +14,40 @@
     <div class="nav-auth">
         <!-- Auth buttons (shown when logged out) -->
         <div class="nav-auth-buttons" id="auth-buttons">
-            <button id="nav-login-btn" type="button">Login</button>
-            <button id="nav-signup-btn" type="button">Sign Up</button>
+            <button id="nav-login-btn" type="button">Sign In</button>
+            <button id="nav-signup-btn" type="button">Send OTP</button>
         </div>
 
         <div id="auth-forms">
             <!-- Login Form -->
             <form id="login-form">
-                <h2>Login</h2>
+                <h2>Sign In with OTP</h2>
                 <div class="form-group">
                     <label for="login-email">Email</label>
                     <input type="email" id="login-email" required>
                 </div>
                 <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required>
+                    <label for="login-otp">OTP Code</label>
+                    <input type="text" id="login-otp" inputmode="numeric" autocomplete="one-time-code" required>
                 </div>
-                <button type="submit">Login</button>
+                <button type="submit">Verify OTP & Sign In</button>
                 <div id="login-error" class="error-message"></div>
                 <div class="auth-toggle">
-                    Don't have an account? <a id="show-signup">Sign up</a>
+                    Need an OTP first? <a id="show-signup">Send OTP</a>
                 </div>
             </form>
 
             <!-- Signup Form -->
             <form id="signup-form" style="display: none;">
-                <h2>Create Account</h2>
+                <h2>Send OTP</h2>
                 <div class="form-group">
                     <label for="signup-email">Email</label>
                     <input type="email" id="signup-email" required>
                 </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required minlength="8">
-                    <small>Password must be at least 8 characters</small>
-                </div>
-                <button type="submit">Sign Up</button>
+                <button type="submit">Send OTP Code</button>
                 <div id="signup-error" class="error-message"></div>
                 <div class="auth-toggle">
-                    Already have an account? <a id="show-login">Login</a>
+                    Already have an OTP? <a id="show-login">Sign in</a>
                 </div>
             </form>
         </div>
@@ -131,12 +125,12 @@
     };
 
     // Cache for color data to minimize API calls
-    async function loadColorsFromAppwrite() {
+    async function loadColorsFromBackend() {
         try {
             const newColorData = {};
 
             // Use the backend abstraction to load all documents
-            const documents = await window.appwriteBackend.loadAllDocuments(
+            const documents = await window.shilovBackend.loadAllDocuments(
                 databaseId,
                 collectionId
             );
@@ -147,7 +141,7 @@
 
             window.colorData = newColorData;
         } catch (error) {
-            console.error('Error loading colors from Appwrite:', error);
+            console.error('Error loading colors from backend:', error);
         }
     }
 
@@ -164,20 +158,20 @@
         }
 
         try {
-            // Try to save to Appwrite first, only update local cache if successful
-            if (window.appwriteBackend) {
+            // Try to save to backend first, only update local cache if successful
+            if (window.shilovBackend) {
                 try {
                     // First, try to find if a document exists
                     const query = [
-                        window.appwriteBackend.query.equal('datestr', dateStr)
+                        window.shilovBackend.query.equal('datestr', dateStr)
                     ];
 
-                    const response = await window.appwriteBackend.listDocuments(databaseId, collectionId, query);
+                    const response = await window.shilovBackend.listDocuments(databaseId, collectionId, query);
                     const existingDocs = response.documents;
 
                     if (colorIndex === 0 && existingDocs.length > 0) {
                         // Delete the document if colorIndex is 0
-                        await window.appwriteBackend.deleteDocument(databaseId, collectionId, existingDocs[0].$id);
+                        await window.shilovBackend.deleteDocument(databaseId, collectionId, existingDocs[0].$id);
                     } else if (colorIndex > 0) {
                         // Create or update the document
                         const documentData = {
@@ -187,14 +181,14 @@
 
                         if (existingDocs.length > 0) {
                             // Update existing document
-                            await window.appwriteBackend.updateDocument(databaseId, collectionId, existingDocs[0].$id, documentData);
+                            await window.shilovBackend.updateDocument(databaseId, collectionId, existingDocs[0].$id, documentData);
                         } else {
                             // Create new document
-                            await window.appwriteBackend.createDocument(databaseId, collectionId, 'unique()', documentData);
+                            await window.shilovBackend.createDocument(databaseId, collectionId, 'unique()', documentData);
                         }
                     }
 
-                    // Only update local cache after successful save to Appwrite
+                    // Only update local cache after successful save to backend
                     if (colorIndex === 0) {
                         delete window.colorData[dateStr];
                     } else {
@@ -203,7 +197,7 @@
 
                     return true;
                 } catch (error) {
-                    console.error('Error saving color to Appwrite:', error);
+                    console.error('Error saving color to backend:', error);
                     return false;
                 }
             }
@@ -311,8 +305,8 @@
         td.style.borderColor = 'var(--border)';
         updateBG(td);
 
-        // Create a debounced function for Appwrite updates
-        const debouncedAppwriteUpdate = debounce((dateStr, colorIndex, tdElement) => {
+        // Create a debounced function for backend updates
+        const debouncedBackendUpdate = debounce((dateStr, colorIndex, tdElement) => {
             try {
                 // Add this update to the queue to ensure all clicks are processed in sequence
                 // even if they happen in rapid succession
@@ -349,8 +343,8 @@
                 td.style.borderColor = colors[next] ?? 'var(--border)';
             }
 
-            // Debounced Appwrite update
-            debouncedAppwriteUpdate(dateStr, next, td);
+            // Debounced backend update
+            debouncedBackendUpdate(dateStr, next, td);
         });
         return td;
     }
@@ -399,7 +393,7 @@
 
     // Make functions and data available to auth.js
     window.createCalendars = createCalendars;
-    window.loadColorsFromAppwrite = loadColorsFromAppwrite;
+    window.loadColorsFromBackend = loadColorsFromBackend;
     window.createColorLegend = createColorLegend;
     window.colorMeanings = colorMeanings;
     window.colors = colors;
