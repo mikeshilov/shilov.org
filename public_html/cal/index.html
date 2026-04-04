@@ -154,11 +154,7 @@
             if (window.shilovBackend) {
                 try {
                     // First, try to find if a document exists
-                    const query = [
-                        window.shilovBackend.query.equal('datestr', dateStr)
-                    ];
-
-                    const response = await window.shilovBackend.listDocuments(query);
+                    const response = await window.shilovBackend.listDocuments({ datestr: dateStr });
                     const existingDocs = response.documents;
 
                     if (colorIndex === 0 && existingDocs.length > 0) {

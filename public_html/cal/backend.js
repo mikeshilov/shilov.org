@@ -1,24 +1,9 @@
 // Shilov.org Backend Service
 class ShilovBackend {
     constructor() {
-        this.query = null;
         this.currentUser = null;
         this.baseUrl = 'https://api.shilov.org';
         this.token = localStorage.getItem('shilov_session_token') || '';
-    }
-
-    // Initialize query helpers used by the calendar code.
-    initialize() {
-        try {
-            this.query = {
-                equal: (field, value) => ({ op: 'equal', field, value })
-            };
-
-            return true;
-        } catch (error) {
-            console.error('Error initializing Shilov backend:', error);
-            return false;
-        }
     }
 
     async _request(path, options = {}) {
@@ -166,15 +151,13 @@ class ShilovBackend {
         }
     }
 
-    async listDocuments(queries = []) {
+    async listDocuments({ datestr } = {}) {
         try {
             const colorsMap = await this._loadColorsMap();
             let documents = this._colorsMapToDocuments(colorsMap);
 
-            for (const q of queries || []) {
-                if (q && q.op === 'equal' && q.field === 'datestr') {
-                    documents = documents.filter(d => d.datestr === q.value);
-                }
+            if (datestr) {
+                documents = documents.filter(d => d.datestr === datestr);
             }
 
             return {
@@ -247,9 +230,9 @@ class ShilovBackend {
         }
     }
 
-    async loadAllDocuments(queries = []) {
+    async loadAllDocuments() {
         try {
-            const response = await this.listDocuments(queries);
+            const response = await this.listDocuments();
             return response.documents || [];
         } catch (error) {
             console.error('Error loading all documents:', error);

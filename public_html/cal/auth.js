@@ -117,9 +117,6 @@ function downloadColorData() {
 // Initialize authentication
 function initializeAuth() {
     try {
-        // Initialize Shilov backend
-        window.shilovBackend.initialize();
-
         // Set up event listeners for auth forms
         document.getElementById('login-email').addEventListener('input', function(e) {
             document.getElementById('signup-email').value = e.target.value;
