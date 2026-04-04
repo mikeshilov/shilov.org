@@ -58,8 +58,7 @@ function updateUIForLoggedInUser() {
     document.getElementById('auth-forms').classList.remove('active');
     document.getElementById('auth-buttons').style.display = 'none';
     document.getElementById('user-info').style.display = 'flex';
-    document.getElementById('user-email').textContent =
-        window.currentUser?.email || window.currentUser?.user_email || window.currentUser?.name || 'Logged in';
+    document.getElementById('user-email').textContent = window.currentUser?.email || 'Logged in';
     // Note: createCalendars() will be called after colors are loaded
 }
 
@@ -154,6 +153,7 @@ function initializeAuth() {
                 document.getElementById('auth-forms').classList.add('active');
                 document.getElementById('login-email').value = email;
                 document.getElementById('login-error').textContent = 'OTP sent to your email. Enter it below to sign in.';
+                document.getElementById('login-otp').focus();
             } else {
                 document.getElementById('signup-error').textContent = result.error || 'Could not send OTP';
             }

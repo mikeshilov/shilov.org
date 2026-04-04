@@ -145,26 +145,20 @@
             // Try to save to backend first, only update local cache if successful
             if (window.shilovBackend) {
                 try {
-                    // First, check if color data exists for this date
-                    const existingColor = await window.shilovBackend.getColorDataByDate(dateStr);
+                    // Check local cache first to avoid a network read on every click
+                    const hasExistingColor = Object.prototype.hasOwnProperty.call(window.colorData, dateStr);
 
-                    if (colorIndex === 0 && existingColor !== null) {
+                    if (colorIndex === 0 && hasExistingColor) {
                         // Delete color data if colorIndex is 0
                         await window.shilovBackend.deleteColorData(dateStr);
                     } else if (colorIndex > 0) {
-                        // Create or update color data
+                        // Upsert color data
                         const colorDataPayload = {
                             datestr: dateStr,
                             color: colorIndex
                         };
 
-                        if (existingColor !== null) {
-                            // Update existing color data
-                            await window.shilovBackend.updateColorData(colorDataPayload);
-                        } else {
-                            // Create new color data
-                            await window.shilovBackend.createColorData(colorDataPayload);
-                        }
+                        await window.shilovBackend.upsertColorData(colorDataPayload);
                     }
 
                     // Only update local cache after successful save to backend

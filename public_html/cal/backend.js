@@ -126,13 +126,12 @@ class ShilovBackend {
 
     async checkSession() {
         try {
-            let payload = null;
-            payload = await this._request('/user/me', { method: 'GET' });
-            const email = payload?.email || payload;
+            const payload = await this._request('/user/me', { method: 'GET' });
+            const email = typeof payload === 'string' ? payload : payload?.email;
             if (!email) {
                 return { success: false };
             }
-            this.currentUser = email;
+            this.currentUser = { email };
             return { success: true, user: this.currentUser };
         } catch (_) {
             return { success: false };
@@ -148,20 +147,7 @@ class ShilovBackend {
         }
     }
 
-    async getColorDataByDate(datestr) {
-        try {
-            if (!datestr) {
-                throw new Error('datestr is required');
-            }
-            const colorDataMap = await this.loadColorDataMap();
-            return colorDataMap[datestr] ?? null;
-        } catch (error) {
-            console.error('Error loading color data by date:', error);
-            throw error;
-        }
-    }
-
-    async createColorData(data) {
+    async upsertColorData(data) {
         try {
             const datestr = data?.datestr;
             const color = data?.color;
@@ -176,27 +162,7 @@ class ShilovBackend {
 
             return { datestr, color };
         } catch (error) {
-            console.error('Error creating color data:', error);
-            throw error;
-        }
-    }
-
-    async updateColorData(data) {
-        try {
-            const datestr = data?.datestr;
-            const color = data?.color;
-            if (!datestr || !color) {
-                throw new Error('datestr and color are required');
-            }
-
-            await this._request(`/cal/colors/${encodeURIComponent(datestr)}`, {
-                method: 'PUT',
-                body: JSON.stringify({ color })
-            });
-
-            return { datestr, color };
-        } catch (error) {
-            console.error('Error updating color data:', error);
+            console.error('Error upserting color data:', error);
             throw error;
         }
     }
