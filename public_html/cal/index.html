@@ -122,16 +122,8 @@
     // Cache for color data to minimize API calls
     async function loadColorsFromBackend() {
         try {
-            const newColorData = {};
-
-            // Use the backend abstraction to load all color data
-            const colorDataEntries = await window.shilovBackend.loadAllColorData();
-
-            colorDataEntries.forEach(colorDataItem => {
-                newColorData[colorDataItem.datestr] = colorDataItem.color;
-            });
-
-            window.colorData = newColorData;
+            // Use the backend abstraction to load a date-to-color map
+            window.colorData = await window.shilovBackend.loadColorDataMap();
         } catch (error) {
             console.error('Error loading colors from backend:', error);
         }
@@ -153,13 +145,12 @@
             // Try to save to backend first, only update local cache if successful
             if (window.shilovBackend) {
                 try {
-                    // First, try to find if color data exists for this date
-                    const response = await window.shilovBackend.listColorData({ datestr: dateStr });
-                    const existingColorData = response.colorData;
+                    // First, check if color data exists for this date
+                    const existingColor = await window.shilovBackend.getColorDataByDate(dateStr);
 
-                    if (colorIndex === 0 && existingColorData.length > 0) {
+                    if (colorIndex === 0 && existingColor !== null) {
                         // Delete color data if colorIndex is 0
-                        await window.shilovBackend.deleteColorData(existingColorData[0].$id);
+                        await window.shilovBackend.deleteColorData(dateStr);
                     } else if (colorIndex > 0) {
                         // Create or update color data
                         const colorDataPayload = {
@@ -167,7 +158,7 @@
                             color: colorIndex
                         };
 
-                        if (existingColorData.length > 0) {
+                        if (existingColor !== null) {
                             // Update existing color data
                             await window.shilovBackend.updateColorData(colorDataPayload);
                         } else {

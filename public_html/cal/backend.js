@@ -61,18 +61,6 @@ class ShilovBackend {
         return payload?.session_token || payload?.sessionToken || payload?.token || '';
     }
 
-    _colorsMapToColorData(colorsMap) {
-        const colorData = [];
-        for (const [datestr, color] of Object.entries(colorsMap || {})) {
-            colorData.push({
-                $id: datestr,
-                datestr,
-                color
-            });
-        }
-        return colorData;
-    }
-
     async _loadColorsMap() {
         const payload = await this._request('/cal/colors', { method: 'GET' });
         return payload?.colors || {};
@@ -151,21 +139,24 @@ class ShilovBackend {
         }
     }
 
-    async listColorData({ datestr } = {}) {
+    async loadColorDataMap() {
         try {
-            const colorsMap = await this._loadColorsMap();
-            let colorData = this._colorsMapToColorData(colorsMap);
-
-            if (datestr) {
-                colorData = colorData.filter(d => d.datestr === datestr);
-            }
-
-            return {
-                total: colorData.length,
-                colorData
-            };
+            return await this._loadColorsMap();
         } catch (error) {
-            console.error('Error listing color data:', error);
+            console.error('Error loading color data map:', error);
+            throw error;
+        }
+    }
+
+    async getColorDataByDate(datestr) {
+        try {
+            if (!datestr) {
+                throw new Error('datestr is required');
+            }
+            const colorDataMap = await this.loadColorDataMap();
+            return colorDataMap[datestr] ?? null;
+        } catch (error) {
+            console.error('Error loading color data by date:', error);
             throw error;
         }
     }
@@ -183,11 +174,7 @@ class ShilovBackend {
                 body: JSON.stringify({ color })
             });
 
-            return {
-                $id: datestr,
-                datestr,
-                color
-            };
+            return { datestr, color };
         } catch (error) {
             console.error('Error creating color data:', error);
             throw error;
@@ -207,35 +194,25 @@ class ShilovBackend {
                 body: JSON.stringify({ color })
             });
 
-            return {
-                $id: datestr,
-                datestr,
-                color
-            };
+            return { datestr, color };
         } catch (error) {
             console.error('Error updating color data:', error);
             throw error;
         }
     }
 
-    async deleteColorData(colorDataId) {
+    async deleteColorData(datestr) {
         try {
-            await this._request(`/cal/colors/${encodeURIComponent(colorDataId)}`, {
+            if (!datestr) {
+                throw new Error('datestr is required');
+            }
+
+            await this._request(`/cal/colors/${encodeURIComponent(datestr)}`, {
                 method: 'DELETE'
             });
-            return { $id: colorDataId };
+            return { datestr };
         } catch (error) {
             console.error('Error deleting color data:', error);
-            throw error;
-        }
-    }
-
-    async loadAllColorData() {
-        try {
-            const response = await this.listColorData();
-            return response.colorData || [];
-        } catch (error) {
-            console.error('Error loading all color data:', error);
             throw error;
         }
     }
