@@ -124,11 +124,11 @@
         try {
             const newColorData = {};
 
-            // Use the backend abstraction to load all documents
-            const documents = await window.shilovBackend.loadAllDocuments();
+            // Use the backend abstraction to load all color data
+            const colorDataEntries = await window.shilovBackend.loadAllColorData();
 
-            documents.forEach(doc => {
-                newColorData[doc.datestr] = doc.color;
+            colorDataEntries.forEach(colorDataItem => {
+                newColorData[colorDataItem.datestr] = colorDataItem.color;
             });
 
             window.colorData = newColorData;
@@ -153,26 +153,26 @@
             // Try to save to backend first, only update local cache if successful
             if (window.shilovBackend) {
                 try {
-                    // First, try to find if a document exists
-                    const response = await window.shilovBackend.listDocuments({ datestr: dateStr });
-                    const existingDocs = response.documents;
+                    // First, try to find if color data exists for this date
+                    const response = await window.shilovBackend.listColorData({ datestr: dateStr });
+                    const existingColorData = response.colorData;
 
-                    if (colorIndex === 0 && existingDocs.length > 0) {
-                        // Delete the document if colorIndex is 0
-                        await window.shilovBackend.deleteDocument(existingDocs[0].$id);
+                    if (colorIndex === 0 && existingColorData.length > 0) {
+                        // Delete color data if colorIndex is 0
+                        await window.shilovBackend.deleteColorData(existingColorData[0].$id);
                     } else if (colorIndex > 0) {
-                        // Create or update the document
-                        const documentData = {
+                        // Create or update color data
+                        const colorDataPayload = {
                             datestr: dateStr,
                             color: colorIndex
                         };
 
-                        if (existingDocs.length > 0) {
-                            // Update existing document
-                            await window.shilovBackend.updateDocument(documentData);
+                        if (existingColorData.length > 0) {
+                            // Update existing color data
+                            await window.shilovBackend.updateColorData(colorDataPayload);
                         } else {
-                            // Create new document
-                            await window.shilovBackend.createDocument(documentData);
+                            // Create new color data
+                            await window.shilovBackend.createColorData(colorDataPayload);
                         }
                     }
 

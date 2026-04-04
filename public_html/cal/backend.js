@@ -61,16 +61,16 @@ class ShilovBackend {
         return payload?.session_token || payload?.sessionToken || payload?.token || '';
     }
 
-    _colorsMapToDocuments(colorsMap) {
-        const docs = [];
+    _colorsMapToColorData(colorsMap) {
+        const colorData = [];
         for (const [datestr, color] of Object.entries(colorsMap || {})) {
-            docs.push({
+            colorData.push({
                 $id: datestr,
                 datestr,
                 color
             });
         }
-        return docs;
+        return colorData;
     }
 
     async _loadColorsMap() {
@@ -151,26 +151,26 @@ class ShilovBackend {
         }
     }
 
-    async listDocuments({ datestr } = {}) {
+    async listColorData({ datestr } = {}) {
         try {
             const colorsMap = await this._loadColorsMap();
-            let documents = this._colorsMapToDocuments(colorsMap);
+            let colorData = this._colorsMapToColorData(colorsMap);
 
             if (datestr) {
-                documents = documents.filter(d => d.datestr === datestr);
+                colorData = colorData.filter(d => d.datestr === datestr);
             }
 
             return {
-                total: documents.length,
-                documents
+                total: colorData.length,
+                colorData
             };
         } catch (error) {
-            console.error('Error listing documents:', error);
+            console.error('Error listing color data:', error);
             throw error;
         }
     }
 
-    async createDocument(data) {
+    async createColorData(data) {
         try {
             const datestr = data?.datestr;
             const color = data?.color;
@@ -189,12 +189,12 @@ class ShilovBackend {
                 color
             };
         } catch (error) {
-            console.error('Error creating document:', error);
+            console.error('Error creating color data:', error);
             throw error;
         }
     }
 
-    async updateDocument(data) {
+    async updateColorData(data) {
         try {
             const datestr = data?.datestr;
             const color = data?.color;
@@ -213,29 +213,29 @@ class ShilovBackend {
                 color
             };
         } catch (error) {
-            console.error('Error updating document:', error);
+            console.error('Error updating color data:', error);
             throw error;
         }
     }
 
-    async deleteDocument(documentId) {
+    async deleteColorData(colorDataId) {
         try {
-            await this._request(`/cal/colors/${encodeURIComponent(documentId)}`, {
+            await this._request(`/cal/colors/${encodeURIComponent(colorDataId)}`, {
                 method: 'DELETE'
             });
-            return { $id: documentId };
+            return { $id: colorDataId };
         } catch (error) {
-            console.error('Error deleting document:', error);
+            console.error('Error deleting color data:', error);
             throw error;
         }
     }
 
-    async loadAllDocuments() {
+    async loadAllColorData() {
         try {
-            const response = await this.listDocuments();
-            return response.documents || [];
+            const response = await this.listColorData();
+            return response.colorData || [];
         } catch (error) {
-            console.error('Error loading all documents:', error);
+            console.error('Error loading all color data:', error);
             throw error;
         }
     }
