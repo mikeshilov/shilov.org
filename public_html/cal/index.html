@@ -135,7 +135,7 @@
     }
 
     /** Сохраняет индекс цвета (0 — сброс) */
-    async function setColor(dateStr, colorIndex, tdElement) {
+    async function setColor(dateStr, colorIndex, tdElement, hadExistingColor = false) {
         // Start the loader if tdElement is provided
         if (tdElement) {
             tdElement.classList.add('loading');
@@ -145,10 +145,7 @@
             // Try to save to backend first, only update local cache if successful
             if (window.shilovBackend) {
                 try {
-                    // Check local cache first to avoid a network read on every click
-                    const hasExistingColor = Object.prototype.hasOwnProperty.call(window.colorData, dateStr);
-
-                    if (colorIndex === 0 && hasExistingColor) {
+                    if (colorIndex === 0 && hadExistingColor) {
                         // Delete color data if colorIndex is 0
                         await window.shilovBackend.deleteColorData(dateStr);
                     } else if (colorIndex > 0) {
@@ -279,12 +276,12 @@
         updateBG(td);
 
         // Create a debounced function for backend updates
-        const debouncedBackendUpdate = debounce((dateStr, colorIndex, tdElement) => {
+        const debouncedBackendUpdate = debounce((dateStr, colorIndex, tdElement, hadExistingColor) => {
             try {
                 // Add this update to the queue to ensure all clicks are processed in sequence
                 // even if they happen in rapid succession
                 updateQueue.add(async () => {
-                    return await setColor(dateStr, colorIndex, tdElement);
+                    return await setColor(dateStr, colorIndex, tdElement, hadExistingColor);
                 });
             } catch (error) {
                 console.error('Error during color update:', error);
@@ -295,7 +292,8 @@
         td.addEventListener('click', async () => {
             // Get current color index from cache
             let currentIdx = 0;
-            if (Object.keys(window.colorData).length > 0 && window.colorData[dateStr]) {
+            const hadExistingColor = Object.prototype.hasOwnProperty.call(window.colorData, dateStr);
+            if (hadExistingColor && window.colorData[dateStr]) {
                 currentIdx = window.colorData[dateStr];
             }
 
@@ -317,7 +315,7 @@
             }
 
             // Debounced backend update
-            debouncedBackendUpdate(dateStr, next, td);
+            debouncedBackendUpdate(dateStr, next, td, hadExistingColor);
         });
         return td;
     }
