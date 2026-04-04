@@ -96,8 +96,6 @@
 
     window.currentUser = null;
     window.colorData = {};
-    const databaseId = '68231077002d32d8e158';
-    const collectionId = '682310940035cc31cc0d';
 
     // Debounce function to limit how often a function can be called
     function debounce(func, wait) {
@@ -127,10 +125,7 @@
             const newColorData = {};
 
             // Use the backend abstraction to load all documents
-            const documents = await window.shilovBackend.loadAllDocuments(
-                databaseId,
-                collectionId
-            );
+            const documents = await window.shilovBackend.loadAllDocuments();
 
             documents.forEach(doc => {
                 newColorData[doc.datestr] = doc.color;
@@ -163,12 +158,12 @@
                         window.shilovBackend.query.equal('datestr', dateStr)
                     ];
 
-                    const response = await window.shilovBackend.listDocuments(databaseId, collectionId, query);
+                    const response = await window.shilovBackend.listDocuments(query);
                     const existingDocs = response.documents;
 
                     if (colorIndex === 0 && existingDocs.length > 0) {
                         // Delete the document if colorIndex is 0
-                        await window.shilovBackend.deleteDocument(databaseId, collectionId, existingDocs[0].$id);
+                        await window.shilovBackend.deleteDocument(existingDocs[0].$id);
                     } else if (colorIndex > 0) {
                         // Create or update the document
                         const documentData = {
@@ -178,10 +173,10 @@
 
                         if (existingDocs.length > 0) {
                             // Update existing document
-                            await window.shilovBackend.updateDocument(databaseId, collectionId, existingDocs[0].$id, documentData);
+                            await window.shilovBackend.updateDocument(documentData);
                         } else {
                             // Create new document
-                            await window.shilovBackend.createDocument(databaseId, collectionId, 'unique()', documentData);
+                            await window.shilovBackend.createDocument(documentData);
                         }
                     }
 

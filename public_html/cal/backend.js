@@ -166,8 +166,7 @@ class ShilovBackend {
         }
     }
 
-    // Database operations compatibility
-    async listDocuments(databaseId, collectionId, queries = []) {
+    async listDocuments(queries = []) {
         try {
             const colorsMap = await this._loadColorsMap();
             let documents = this._colorsMapToDocuments(colorsMap);
@@ -188,7 +187,7 @@ class ShilovBackend {
         }
     }
 
-    async createDocument(databaseId, collectionId, documentId, data) {
+    async createDocument(data) {
         try {
             const datestr = data?.datestr;
             const color = data?.color;
@@ -212,9 +211,9 @@ class ShilovBackend {
         }
     }
 
-    async updateDocument(databaseId, collectionId, documentId, data) {
+    async updateDocument(data) {
         try {
-            const datestr = data?.datestr || documentId;
+            const datestr = data?.datestr;
             const color = data?.color;
             if (!datestr || !color) {
                 throw new Error('datestr and color are required');
@@ -236,7 +235,7 @@ class ShilovBackend {
         }
     }
 
-    async deleteDocument(databaseId, collectionId, documentId) {
+    async deleteDocument(documentId) {
         try {
             await this._request(`/cal/colors/${encodeURIComponent(documentId)}`, {
                 method: 'DELETE'
@@ -248,10 +247,9 @@ class ShilovBackend {
         }
     }
 
-    // Helper method to load all documents with pagination compatibility
-    async loadAllDocuments(databaseId, collectionId, queries = []) {
+    async loadAllDocuments(queries = []) {
         try {
-            const response = await this.listDocuments(databaseId, collectionId, queries);
+            const response = await this.listDocuments(queries);
             return response.documents || [];
         } catch (error) {
             console.error('Error loading all documents:', error);
