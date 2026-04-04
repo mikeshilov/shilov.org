@@ -114,27 +114,11 @@ function downloadColorData() {
     }
 }
 
-function getShilovBackendEndpoint() {
-    if (typeof window.SHILOV_API_URL === 'string' && window.SHILOV_API_URL.trim()) {
-        return window.SHILOV_API_URL.trim().replace(/\/+$/, '');
-    }
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost';
-    }
-    return 'https://api.shilov.org';
-}
-
 // Initialize authentication
 function initializeAuth() {
     try {
         // Initialize Shilov backend
-        window.shilovBackend.initialize(getShilovBackendEndpoint(), 'cal');
-
-        // For backward compatibility
-        window.appwriteClient = window.shilovBackend.client;
-        window.databases = window.shilovBackend.databases;
-        window.query = window.shilovBackend.query;
-        window.account = window.shilovBackend.account;
+        window.shilovBackend.initialize();
 
         // Set up event listeners for auth forms
         document.getElementById('login-email').addEventListener('input', function(e) {
