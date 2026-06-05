@@ -9,7 +9,7 @@ class ShilovBackend {
     async _request(path, options = {}) {
         const headers = {
             'Content-Type': 'application/json',
-            'X-App-ID': 'shilov.org', // used for localhost testing only, can be removed in production
+            'X-App-ID': 'shilov.org', // used for localhost testing mainly, can be removed in production
             ...(options.headers || {})
         };
 
